@@ -19,7 +19,7 @@ import { c } from './shared.mjs';
 const MAX_BODY = 24 * 1024 * 1024;
 
 /** Bumped whenever the UI or the import pipeline changes. */
-export const BUILD = 'import-' + (import.meta.env?.NONE ?? 'r2-450dpi');
+export const BUILD = 'import-' + (process.env.NONE ?? 'r2-450dpi');
 
 /** Prepared bitmaps from recent previews, so a print sends the previewed dots. */
 const jobs = new Map();

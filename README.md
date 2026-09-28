@@ -5,12 +5,24 @@ printer thermal ESC/POS 58mm/80mm lewat **Bluetooth Low Energy**, tanpa perlu
 driver dan tanpa lewat desktop.
 
 ```bash
-npm install
-node bin/resi.mjs scan                            # cari printer BLE
-node bin/resi.mjs import assets/resi.pdf --yes    # cetak PDF apa adanya
-node bin/resi.mjs web                             # tampilan di browser
-node bin/resi.mjs print --file assets/resi.pdf --yes
+bun install
+bun bin/resi.mjs scan                            # cari printer BLE
+bun bin/resi.mjs import assets/resi.pdf --yes    # cetak PDF apa adanya
+bun bin/resi.mjs web                             # tampilan di browser
+bun bin/resi.mjs print --file assets/resi.pdf --yes
 ```
+
+## Kebutuhan
+
+[Bun](https://bun.sh) 1.4 atau lebih baru - runtime, package manager, dan test
+runner sekaligus. Node.js tidak lagi dipakai.
+
+`bun install` sengaja memblokir postinstall `@stoprocent/noble` (binding
+CoreBluetooth). Itu benar: addon-nya sudah menyertakan binary `.node` siap pakai
+untuk macOS, jadi tidak ada yang perlu dikompilasi. Jangan `bun pm trust`.
+
+Rasterisasi PDF memakai `qlmanage` (Quick Look), jadi pratinjau gambar hanya
+tersedia di macOS. Di platform lain, `import` dari PDF perlu rasteriser lain.
 
 ## Cetak apa adanya (import)
 
@@ -19,9 +31,9 @@ dibaca lalu digambar ulang. Tidak ada teks yang diekstrak, tidak ada tata letak
 yang dihitung ulang - yang dicetak adalah berkas itu sendiri.
 
 ```bash
-node bin/resi.mjs import assets/resi.pdf --yes
-node bin/resi.mjs import label.png --dither
-node bin/resi.mjs import assets/resi.pdf --probe-width   # ukur lebar head
+bun bin/resi.mjs import assets/resi.pdf --yes
+bun bin/resi.mjs import label.png --dither
+bun bin/resi.mjs import assets/resi.pdf --probe-width   # ukur lebar head
 ```
 
 Yang terjadi di balik layar: PDF di-raster jadi gambar, margin putih dipangkas,
@@ -65,7 +77,7 @@ terakhir dari raster yang lebih lebar terpotong.
 
 ## Tampilan web
 
-`node bin/resi.mjs web` membuka UI di browser (default <http://127.0.0.1:8137>)
+`bun bin/resi.mjs web` membuka UI di browser (default <http://127.0.0.1:8137>)
 dengan pratinjau label yang sama persis dengan yang dikirim ke printer.
 
 - **Pratinjau langsung** - SVG yang digambar dari rencana yang sama dengan
@@ -79,7 +91,7 @@ dengan pratinjau label yang sama persis dengan yang dikirim ke printer.
   persis sama dengan yang digambar pratinjau - hasil pratinjau di-cache, jadi
   tidak ada rasterisasi kedua yang bisa meleset. PDF.js di browser hanya dipakai
   kalau server tidak punya rasteriser PDF (bukan macOS).
-- **Cetak** - printer BLE dikendalikan dari server Node, jadi tidak perlu
+- **Cetak** - printer BLE dikendalikan dari server Bun, jadi tidak perlu
   dukungan Web Bluetooth di browser.
 - **Scan BLE** - tombol di header untuk mencari printer sekitar.
 
@@ -191,11 +203,11 @@ antar restart. Ganti characteristic tulis dengan `--write-uuid` bila berbeda.
 ## Pengembangan
 
 ```bash
-npm test        # 47 test: barcode, plan, batas kertas, parser, PNG, raster, GS v 0
-npm run web     # buka UI browser
-npm run scan
-npm run preview
-npm run selftest
+bun test        # 52 test: barcode, plan, batas kertas, parser, PNG, raster, GS v 0
+bun run web     # buka UI browser
+bun run scan
+bun run preview
+bun run selftest
 ```
 
 Printer yang sudah diuji: RPP02N dengan kertas 80mm (area cetak 576 dot). Printer ini **tidak** merender barcode

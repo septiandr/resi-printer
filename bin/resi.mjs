@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { readFile } from 'node:fs/promises';
 import { runScan, runProbe, runDevices } from '../src/commands/ble.mjs';
 import { runPrint, runPreview, runRaw, runExport } from '../src/commands/print.mjs';

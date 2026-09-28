@@ -7,18 +7,19 @@
     "resi": "./bin/resi.mjs"
   },
   "engines": {
-    "node": ">=18"
+    "bun": ">=1.4.0"
   },
+  "packageManager": "bun@1.4.0",
   "scripts": {
-    "scan": "node bin/resi.mjs scan",
-    "probe": "node bin/resi.mjs probe",
-    "features": "node bin/resi.mjs features",
-    "preview": "node bin/resi.mjs preview --file assets/resi.pdf",
-    "print": "node bin/resi.mjs print",
-    "web": "node bin/resi.mjs web",
-    "selftest": "node bin/resi.mjs selftest",
-    "test": "node --test \"test/*.test.mjs\"",
-    "import": "node bin/resi.mjs import"
+    "scan": "bun bin/resi.mjs scan",
+    "probe": "bun bin/resi.mjs probe",
+    "features": "bun bin/resi.mjs features",
+    "preview": "bun bin/resi.mjs preview --file assets/resi.pdf",
+    "print": "bun bin/resi.mjs print",
+    "web": "bun bin/resi.mjs web",
+    "selftest": "bun bin/resi.mjs selftest",
+    "test": "bun test",
+    "import": "bun bin/resi.mjs import"
   },
   "dependencies": {
     "@stoprocent/noble": "^2.8.0",
@@ -26,8 +27,5 @@
     "qrcode": "^1.5.4"
   },
   "license": "MIT",
-  "private": true,
-  "devDependencies": {
-    "jsqr": "^1.4.0"
-  }
+  "private": true
 }
