@@ -1,5 +1,10 @@
 /** The single-page UI served by `resi web`. Kept as one string so there is no
- *  build step and nothing to install to use it. */
+ *  build step and nothing to install to use it.
+ *
+ *  Two rules keep this template literal honest: the browser code below uses
+ *  string concatenation instead of template literals, and anything interpolated
+ *  into markup is escaped first. Both avoid needing escapes that are easy to
+ *  get wrong. */
 export function HTML() {
   return `<!doctype html>
 <html lang="id">
@@ -9,35 +14,62 @@ export function HTML() {
 <title>resi - cetak label Shopee</title>
 <style>
   :root {
+    color-scheme: dark;
     --bg: #0f1115; --panel: #171a21; --panel-2: #1e222b; --line: #2b303b;
     --text: #e6e9ef; --muted: #98a1b3; --accent: #f0a020; --accent-ink: #1a1206;
-    --ok: #35c07f; --err: #ef5f5f;
+    --ok: #35c07f; --err: #ef5f5f; --warn: #e0b341;
+    --paper: #f6f6f6; --shadow: 0 10px 40px rgba(0,0,0,.5);
+    --tint-ok: rgba(53,192,127,.12); --tint-err: rgba(239,95,95,.12);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      color-scheme: light;
+      --bg: #f3f4f7; --panel: #ffffff; --panel-2: #f2f4f7; --line: #d8dce3;
+      --text: #191d24; --muted: #69707c; --accent: #a35c00; --accent-ink: #ffffff;
+      --ok: #0b6b3f; --err: #b3271b; --warn: #8a5d00;
+      --paper: #ffffff; --shadow: 0 8px 26px rgba(20,25,35,.13);
+      --tint-ok: rgba(16,121,74,.1); --tint-err: rgba(179,39,27,.1);
+    }
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
     font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
-  header {
-    display: flex; align-items: center; gap: 12px; padding: 14px 20px;
-    border-bottom: 1px solid var(--line); background: var(--panel);
-    position: sticky; top: 0; z-index: 5;
+  :where(a, button, input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
   }
-  header h1 { font-size: 16px; margin: 0; letter-spacing: .3px; }
+
+  header {
+    display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+    border-bottom: 1px solid var(--line); background: var(--panel);
+    position: sticky; top: 0; z-index: 5; flex-wrap: wrap;
+  }
+  header h1 { font-size: 16px; margin: 0; letter-spacing: .3px; white-space: nowrap; }
   header h1 span { color: var(--accent); }
   header .spacer { flex: 1; }
-  main { display: grid; grid-template-columns: 380px 1fr; min-height: calc(100vh - 57px); }
-  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .header-tools { display: flex; align-items: center; gap: 8px; }
+  #device { width: auto; min-width: 190px; }
 
-  .side { border-right: 1px solid var(--line); padding: 18px; background: var(--panel); }
-  @media (max-width: 900px) { .side { border-right: 0; border-bottom: 1px solid var(--line); } }
+  main { display: grid; grid-template-columns: 400px 1fr; min-height: calc(100vh - 57px); }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+
+  .side {
+    border-right: 1px solid var(--line); padding: 18px; background: var(--panel);
+    max-height: calc(100vh - 57px); overflow: auto; position: sticky; top: 57px;
+  }
+  @media (max-width: 980px) {
+    .side { border-right: 0; border-bottom: 1px solid var(--line); max-height: none; position: static; }
+  }
   .side h2 {
     font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
-    color: var(--muted); margin: 22px 0 10px;
+    color: var(--muted); margin: 24px 0 10px;
   }
   .side h2:first-of-type { margin-top: 0; }
 
   label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .hint { font-size: 11px; color: var(--muted); margin: 6px 0 0; line-height: 1.45; }
+  .hint.warn { color: var(--warn); }
   input, select, textarea, button {
     font: inherit; color: var(--text); background: var(--panel-2);
     border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; width: 100%;
@@ -57,16 +89,28 @@ export function HTML() {
   button.primary:hover:not(:disabled) { filter: brightness(1.08); }
   button.ghost { background: transparent; }
 
-  .stage { padding: 24px; overflow: auto; }
-  .toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-bottom: 18px; }
-  .toolbar .field { margin: 0; min-width: 130px; }
+  .drop {
+    border: 1.5px dashed var(--line); border-radius: 8px; padding: 22px 14px;
+    text-align: center; color: var(--muted); font-size: 13px; cursor: pointer;
+    background: var(--panel-2); transition: border-color .15s, background .15s;
+  }
+  .drop:hover, .drop.over { border-color: var(--accent); background: var(--tint-ok); color: var(--text); }
+  .drop b { color: var(--text); }
+  .drop .fname { display: block; margin-top: 8px; font-size: 12px; color: var(--ok); word-break: break-all; }
+
+  .stage { padding: 24px; overflow: auto; display: flex; flex-direction: column; }
+  .toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-bottom: 16px; }
+  .toolbar .field { margin: 0; min-width: 120px; }
+  .meta { font-size: 12px; color: var(--muted); padding: 8px 0; }
 
   .paper {
-    background: #f6f6f6; border-radius: 6px; padding: 18px; display: flex;
-    justify-content: center; box-shadow: 0 10px 40px rgba(0,0,0,.5);
+    background: var(--paper); border-radius: 6px; padding: 18px; display: flex;
+    justify-content: center; box-shadow: var(--shadow); flex: 1;
   }
   .label-svg { width: 100%; max-width: 420px; height: auto; display: block; }
   .label-svg * { vector-effect: non-scaling-stroke; }
+  .empty { color: var(--muted); text-align: center; padding: 80px 20px; margin: auto; max-width: 380px; }
+  .empty b { color: var(--text); display: block; margin-bottom: 6px; font-size: 14px; }
 
   .notes { margin: 14px 0 0; padding: 0; list-style: none; }
   .notes li {
@@ -78,31 +122,67 @@ export function HTML() {
     display: none; white-space: pre-wrap;
   }
   .status.show { display: block; }
-  .status.ok { background: rgba(53,192,127,.12); border: 1px solid var(--ok); color: #b6f0d3; }
-  .status.err { background: rgba(239,95,95,.12); border: 1px solid var(--err); color: #f6c2c2; }
+  .status.ok { background: var(--tint-ok); border: 1px solid var(--ok); color: var(--ok); }
+  .status.err { background: var(--tint-err); border: 1px solid var(--err); color: var(--err); }
   .status.busy { background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); }
-  .empty { color: var(--muted); text-align: center; padding: 80px 20px; }
-  .kbd { font-family: ui-monospace, Menlo, monospace; background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
+  .status.busy::before {
+    content: ''; display: inline-block; width: 10px; height: 10px; margin-right: 8px;
+    border: 2px solid var(--line); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -1px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .status.busy::before { animation: none; } }
+
   .items { display: grid; gap: 8px; }
-  .item-row { display: grid; grid-template-columns: 44px 1fr 56px 30px; gap: 6px; align-items: center; }
+  .item-row { display: grid; grid-template-columns: 48px 1fr 1fr 34px; gap: 6px; align-items: center; }
   .item-row button { padding: 6px; }
   details { margin-bottom: 10px; }
-  summary { cursor: pointer; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  details.adv { border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; background: var(--panel-2); }
+  details.adv > summary { cursor: pointer; font-size: 12px; color: var(--muted); padding: 10px 0; font-weight: 600; }
+  details.adv > div { padding-bottom: 12px; }
+
+  dialog {
+    border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+    color: var(--text); padding: 0; max-width: 460px; width: calc(100% - 40px);
+    box-shadow: var(--shadow);
+  }
+  dialog::backdrop { background: rgba(0,0,0,.55); }
+  .dlg-head, .dlg-foot {
+    display: flex; align-items: center; gap: 10px; padding: 14px 16px;
+  }
+  .dlg-head { border-bottom: 1px solid var(--line); }
+  .dlg-head strong { flex: 1; font-size: 14px; }
+  .dlg-foot { border-top: 1px solid var(--line); }
+  .dlg-foot .spacer { flex: 1; }
+  .dlg-head button { width: auto; padding: 4px 10px; font-size: 18px; line-height: 1; }
+  .scanlist { padding: 8px 16px 16px; max-height: 55vh; overflow: auto; }
+  .scanrow {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 10px; margin-bottom: 8px; text-align: left; font-weight: 400;
+  }
+  .scanrow .nm { flex: 1; min-width: 0; }
+  .scanrow .nm b { display: block; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scanrow .nm small { color: var(--muted); font-size: 11px; font-family: ui-monospace, Menlo, monospace; }
+  .scanrow .rssi { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .scanrow.picked { border-color: var(--accent); }
+  .kbd { font-family: ui-monospace, Menlo, monospace; background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
 </style>
 </head>
 <body>
 <header>
   <h1>resi <span>cetak label</span></h1>
   <div class="spacer"></div>
-  <select id="device" style="width:auto; min-width:190px" title="Printer tujuan"></select>
-  <button class="ghost" id="scan">Scan BLE</button>
+  <div class="header-tools">
+    <select id="device" title="Printer tujuan" aria-label="Printer tujuan"></select>
+    <button class="ghost" id="scan" type="button">Scan BLE</button>
+  </div>
 </header>
 
 <main>
   <aside class="side">
-    <h2>Sumber</h2>
+    <h2>Sumber label</h2>
     <div class="field">
-      <label for="srcmode">Input</label>
+      <label for="srcmode">Cara memuat label</label>
       <select id="srcmode">
         <option value="import" selected>Import PDF/PNG (sama persis)</option>
         <option value="pdf">PDF &rarr; baca teks &amp; gambar ulang</option>
@@ -111,158 +191,234 @@ export function HTML() {
       </select>
     </div>
 
-    <div id="pane-text">
-      <textarea id="rawtext" spellcheck="false" placeholder="SPXID065670267489&#10;Penerima: Edwin suryo laksono&#10;Alamat: Perumnas bumitelukjambe&#10;HP: 081234567890&#10;Pengirim: zera&#10;Berat: 800 gr&#10;Batas Kirim: 28-09-2026&#10;1x Cover Tutup Knalpot"></textarea>
-      <div class="row" style="margin-top:10px">
-        <button id="load-sample">Contoh</button>
-        <button class="ghost" id="clear">Bersihkan</button>
+    <div id="pane-import" hidden>
+      <div class="drop" id="drop" tabindex="0" role="button"
+           aria-label="Pilih atau seret file PDF atau PNG ke sini">
+        <b>Klik untuk pilih file</b>, atau seret ke sini
+        <span class="fname" id="dropname"></span>
       </div>
+      <input type="file" id="imgfile" accept="application/pdf,image/png" hidden>
+      <p class="hint">Halaman dicetak sebagai gambar apa adanya - tidak ada teks yang
+        dibaca ulang atau tata letak yang dibuat ulang.</p>
+      <details class="adv" style="margin-top:12px">
+        <summary>Pengaturan raster lanjutan</summary>
+        <div>
+          <div class="row">
+            <div class="field">
+              <label for="imp-dpi">Resolusi</label>
+              <select id="imp-dpi">
+                <option value="150">150 dpi</option>
+                <option value="300">300 dpi</option>
+                <option value="450" selected>450 dpi (sama dengan resi import)</option>
+                <option value="600">600 dpi</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="imp-threshold">Gelap &ge;</label>
+              <select id="imp-threshold">
+                <option value="80">80 - Printing lebih terang</option>
+                <option value="128" selected>128 - standar</option>
+                <option value="180">180 - lebih pekat</option>
+                <option value="210">210 - pekat sekali</option>
+              </select>
+            </div>
+          </div>
+          <p class="hint">Naikkan <b>Gelap &ge;</b> bila garis tipis atau barcode
+           hilang saat dicetak.</p>
+          <div class="row">
+            <div class="field">
+              <label for="imp-margin">Margin kiri/atas</label>
+              <select id="imp-margin">
+                <option value="0">0 dot</option>
+                <option value="3" selected>3 dot</option>
+                <option value="8">8 dot</option>
+                <option value="16">16 dot</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="imp-bottom">Margin bawah</label>
+              <select id="imp-bottom">
+                <option value="0">0 mm</option>
+                <option value="5" selected>5 mm</option>
+                <option value="8">8 mm</option>
+                <option value="12">12 mm</option>
+                <option value="100">100 mm (kertas pendek, uji potong)</option>
+              </select>
+            </div>
+          </div>
+          <p class="hint">Margin bawah dipakai untuk menguji di mana garis potong
+            jatuh, bukan untuk pencetakan biasa.</p>
+          <div class="field check">
+            <input type="checkbox" id="imp-dither"><label for="imp-dither">Dither (untuk gambar abu-abu)</label>
+          </div>
+          <div class="field check">
+            <input type="checkbox" id="imp-trim" checked><label for="imp-trim">Potong margin putih</label>
+          </div>
+          <div class="field check">
+            <input type="checkbox" id="imp-invert"><label for="imp-invert">Balik (terang jadi hitam)</label>
+          </div>
+        </div>
+      </details>
     </div>
 
     <div id="pane-pdf" hidden>
+      <label for="pdf">Pilih file PDF</label>
       <input type="file" id="pdf" accept="application/pdf" style="padding:8px">
-      <p style="font-size:12px;color:var(--muted);margin:10px 0 0">
-        <b>Mode gambar ulang.</b> Teks diekstrak dari PDF lalu label disusun ulang
-        oleh program, jadi bentuk dan posisinya tidak sama dengan PDF aslinya.
-        Untuk hasil yang sama persis, pakai tab <b>Import PDF/PNG</b>.
-      </p>
+      <p class="hint warn"><b>Mode gambar ulang.</b> Teks diekstrak dari PDF lalu
+        label disusun ulang oleh program, jadi bentuk dan posisinya tidak sama dengan
+        PDF aslinya. Untuk hasil yang sama persis, pakai <b>Import PDF/PNG</b>.</p>
     </div>
 
-    <div id="pane-import" hidden>
-      <input type="file" id="imgfile" accept="application/pdf,image/png" style="padding:8px">
-      <p style="font-size:12px;color:var(--muted);margin:10px 0 0">
-        Halaman dicetak sebagai gambar apa adanya - tidak ada teks yang dibaca ulang
-        atau tata letak yang dibuat ulang.
-      </p>
+    <div id="pane-text" hidden>
+      <textarea id="rawtext" spellcheck="false" aria-label="Teks label" placeholder="SPXID065670267489&#10;Penerima: Edwin suryo laksono&#10;Alamat: Perumnas bumitelukjambe&#10;HP: 081234567890&#10;Pengirim: zera&#10;Berat: 800 gr&#10;Batas Kirim: 28-09-2026&#10;1x Cover Tutup Knalpot"></textarea>
       <div class="row" style="margin-top:10px">
-        <div class="field"><label for="imp-dpi">Resolusi</label>
-          <select id="imp-dpi">
-            <option value="150">150 dpi</option>
-            <option value="300">300 dpi</option>
-            <option value="450" selected>450 dpi (sama dengan resi import)</option>
-            <option value="600">600 dpi</option>
-          </select>
-        </div>
-        <div class="field"><label for="imp-margin">Margin</label>
-          <select id="imp-margin">
-            <option value="0">0</option><option value="3" selected>3</option>
-            <option value="8">8</option><option value="16">16</option>
-          </select>
-        </div>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <div class="field"><label for="imp-bottom">Margin bawah</label>
-          <select id="imp-bottom">
-            <option value="0">0 mm</option>
-            <option value="5" selected>5 mm</option>
-            <option value="8">8 mm</option>
-            <option value="12">12 mm</option>
-            <option value="100">=100 mm</option>
-          </select>
-        </div>
-        <div class="field"><label for="imp-threshold">Gelap &ge;</label>
-          <select id="imp-threshold">
-            <option value="80">80</option><option value="128" selected>128</option>
-            <option value="180">180</option><option value="210">210</option>
-          </select>
-        </div>
-        <div class="field check" style="align-self:flex-end">
-          <input type="checkbox" id="imp-dither"><label for="imp-dither">Dither</label>
-        </div>
-      </div>
-      <div class="field check" style="margin-top:8px">
-        <input type="checkbox" id="imp-trim" checked><label for="imp-trim">Potong margin putih</label>
-      </div>
-      <div class="field check">
-        <input type="checkbox" id="imp-invert"><label for="imp-invert">Balik (terang jadi hitam)</label>
+        <button id="load-sample" type="button">Contoh</button>
+        <button class="ghost" id="clear" type="button">Bersihkan</button>
       </div>
     </div>
 
     <div id="pane-form" hidden>
-      <div class="field"><label>No. resi</label><input id="f-track" placeholder="SPXID0..."></div>
+      <div class="field"><label for="f-track">No. resi</label><input id="f-track" placeholder="SPXID0..."></div>
       <div class="row">
-        <div class="field"><label>Layanan</label><input id="f-service" value="ECO"></div>
-        <div class="field"><label>Berat</label><input id="f-weight" value="800 gr"></div>
+        <div class="field"><label for="f-service">Layanan</label><input id="f-service" value="ECO"></div>
+        <div class="field"><label for="f-weight">Berat</label><input id="f-weight" value="800 gr"></div>
       </div>
       <div class="row">
-        <div class="field"><label>Batas kirim</label><input id="f-shipby"></div>
-        <div class="field"><label>No. pesanan</label><input id="f-order"></div>
+        <div class="field"><label for="f-shipby">Batas kirim</label><input id="f-shipby"></div>
+        <div class="field"><label for="f-order">No. pesanan</label><input id="f-order"></div>
       </div>
       <h2>Penerima</h2>
-      <div class="field"><label>Nama</label><input id="f-rname"></div>
-      <div class="field"><label>Alamat (satu baris per baris)</label><textarea id="f-raddr" style="min-height:80px"></textarea></div>
+      <div class="field"><label for="f-rname">Nama</label><input id="f-rname"></div>
+      <div class="field"><label for="f-raddr">Alamat (satu baris per baris)</label><textarea id="f-raddr" style="min-height:80px"></textarea></div>
       <h2>Pengirim</h2>
-      <div class="field"><label>Nama</label><input id="f-sname"></div>
-      <div class="field"><label>Telepon</label><input id="f-sphone"></div>
-      <div class="field"><label>Alamat</label><textarea id="f-saddr" style="min-height:60px"></textarea></div>
+      <div class="field"><label for="f-sname">Nama</label><input id="f-sname"></div>
+      <div class="field"><label for="f-sphone">Telepon</label><input id="f-sphone"></div>
+      <div class="field"><label for="f-saddr">Alamat</label><textarea id="f-saddr" style="min-height:60px"></textarea></div>
       <h2>Item</h2>
       <div class="items" id="items"></div>
-      <button class="ghost" id="add-item" style="margin-top:8px">+ Tambah item</button>
+      <button class="ghost" id="add-item" type="button" style="margin-top:8px">+ Tambah item</button>
     </div>
 
     <h2>Cetak</h2>
     <div class="row">
-      <div class="field"><label>Kertas</label>
+      <div class="field">
+        <label for="paper">Lebar kertas</label>
         <select id="paper"><option value="58">58 mm</option><option value="80" selected>80 mm</option></select>
       </div>
-      <div class="field"><label>Barcode</label>
+      <div class="field">
+        <label for="bclayout">Tata letak barcode</label>
         <select id="bclayout">
           <option value="auto">auto</option>
-          <option value="across">across</option>
-          <option value="stack">stack</option>
+          <option value="across">across (sejajar)</option>
+          <option value="stack">stack (bertumpuk)</option>
         </select>
       </div>
     </div>
     <div class="field check" style="margin-top:4px">
-      <input type="checkbox" id="cut" checked><label for="cut">Potong kertas</label>
+      <input type="checkbox" id="cut" checked><label for="cut">Potong kertas setelah cetak</label>
     </div>
     <div class="row" style="margin-top:14px">
-      <button class="primary" id="print">Cetak</button>
-      <button class="ghost" id="refresh">Pratinjau</button>
+      <button class="primary" id="print" type="button">Cetak</button>
+      <button class="ghost" id="refresh" type="button">Pratinjau</button>
     </div>
   </aside>
 
   <section class="stage">
     <div class="toolbar">
-      <div class="field"><label>Zoom</label>
+      <div class="field">
+        <label for="zoom">Zoom pratinjau</label>
         <select id="zoom">
           <option value="0.35">35%</option><option value="0.5">50%</option>
           <option value="0.75" selected>75%</option><option value="1">100%</option>
         </select>
       </div>
       <div class="spacer" style="flex:1"></div>
-      <div class="field" style="min-width:200px"><label>Status</label>
-        <div id="meta" style="font-size:12px;color:var(--muted);padding:8px 0">-</div>
+      <div class="field" style="min-width:220px">
+        <label>Hasil render</label>
+        <div class="meta" id="meta">-</div>
       </div>
     </div>
-    <div class="paper" id="paperbox"><div class="empty" id="empty">Pratinjau akan muncul di sini</div></div>
+    <div class="paper" id="paperbox"></div>
     <ul class="notes" id="notes"></ul>
-    <div class="status" id="status"></div>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
   </section>
 </main>
+
+<dialog id="scandlg" aria-labelledby="scantitle">
+  <div class="dlg-head">
+    <strong id="scantitle">Perangkat BLE di sekitar</strong>
+    <button class="ghost" id="scan-close" type="button" aria-label="Tutup">&times;</button>
+  </div>
+  <div class="scanlist" id="scanlist"></div>
+  <div class="dlg-foot">
+    <button class="ghost" id="scan-again" type="button">Scan lagi</button>
+    <div class="spacer"></div>
+    <button id="scan-done" type="button">Selesai</button>
+  </div>
+</dialog>
 
 <script>
 const $ = (id) => document.getElementById(id);
 const MAX_EDGE = 4000; // stay clear of the browser's canvas size limit
+const DOT_MM = 0.353;   // 203 dpi printer dot, in millimetres
 let printers = [];
-let debounce;
+let debounce = 0;
+let seq = 0;           // guards against an older preview landing after a newer one
 
-function say(msg, kind = 'busy') {
+/** Escape before going anywhere near markup. Values here come from pasted text. */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (ch) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+  ));
+}
+
+function say(msg, kind) {
   const el = $('status');
   el.textContent = msg;
-  el.className = 'status show ' + kind;
+  el.className = 'status show' + (kind ? ' ' + kind : ' busy');
 }
 function clearSay() { $('status').className = 'status'; }
+function fail(e) { say(e && e.message ? e.message : String(e), 'err'); }
+
+/** One neutral empty state, always rebuilt the same way so it cannot go stale. */
+function showEmpty(title, body) {
+  const box = $('paperbox');
+  box.innerHTML = '';
+  const d = document.createElement('div');
+  d.className = 'empty';
+  const b = document.createElement('b');
+  b.textContent = title;
+  d.appendChild(b);
+  if (body) d.appendChild(document.createTextNode(body));
+  box.appendChild(d);
+}
+
+/** Scale whatever is already on the paper, instead of rendering it again. */
+function applyZoom() {
+  const z = Number($('zoom').value);
+  const img = $('paperbox').querySelector('img');
+  if (img) { img.style.width = (Number(img.dataset.dots) * z * DOT_MM) + 'mm'; return; }
+  const svg = $('paperbox').querySelector('svg');
+  if (svg) svg.style.maxWidth = (Number(svg.dataset.dots) * z * DOT_MM) + 'mm';
+}
 
 function itemRow(it = {}) {
   const row = document.createElement('div');
   row.className = 'item-row';
-  row.innerHTML =
-    '<input class="i-qty" value="' + (it.qty || '1') + '" title="Qty">' +
-    '<input class="i-name" value="' + (it.name || '') + '" placeholder="Nama produk">' +
-    '<input class="i-var" value="' + (it.variation || '') + '" placeholder="Varia">' +
-    '<button class="ghost i-del" title="Hapus">x</button>';
-  row.querySelector('.i-del').onclick = () => { row.remove(); };
+  const qty = document.createElement('input');
+  qty.className = 'i-qty'; qty.value = it.qty || '1';
+  qty.placeholder = '1'; qty.title = 'Jumlah'; qty.setAttribute('aria-label', 'Jumlah');
+  const name = document.createElement('input');
+  name.className = 'i-name'; name.value = it.name || '';
+  name.placeholder = 'Nama produk'; name.setAttribute('aria-label', 'Nama produk');
+  const variation = document.createElement('input');
+  variation.className = 'i-var'; variation.value = it.variation || '';
+  variation.placeholder = 'Varian'; variation.setAttribute('aria-label', 'Varian');
+  const del = document.createElement('button');
+  del.className = 'ghost i-del'; del.type = 'button'; del.textContent = 'x';
+  del.title = 'Hapus'; del.setAttribute('aria-label', 'Hapus item');
+  del.onclick = () => { row.remove(); schedulePreview(); };
+  row.append(qty, name, variation, del);
   $('items').appendChild(row);
 }
 function collectItems() {
@@ -326,7 +482,7 @@ async function fileToBase64(file) {
  * a dot, which is exactly what a preview must not do.
  */
 async function renderInBrowser(file) {
-  const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+  const isPdf = /\\.pdf$/i.test(file.name) || file.type === 'application/pdf';
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
@@ -389,11 +545,11 @@ async function grayToPngBase64(gray, width, height) {
   return fileToBase64(new Blob([blob]));
 }
 
-async function importBody(doPrint) {
+function importBody(doPrint) {
   const file = $('imgfile').files[0];
   if (!file) throw new Error('pilih file PDF atau PNG dulu');
-  return {
-    file: await fileToBase64(file),
+  return fileToBase64(file).then((b64) => ({
+    file: b64,
     name: file.name,
     paper: Number($('paper').value),
     dpi: Number($('imp-dpi').value),
@@ -406,7 +562,7 @@ async function importBody(doPrint) {
     cut: $('cut').checked ? 'partial' : 'none',
     device: $('device').value,
     print: doPrint,
-  };
+  }));
 }
 
 /** POST an import, falling back to browser rendering only if the server cannot. */
@@ -441,41 +597,56 @@ function fileOf(body) {
 }
 
 function showImport(data) {
-  const zoom = Number($('zoom').value);
-  $('paperbox').innerHTML =
-    '<img src="data:image/png;base64,' + data.png + '" style="width:' + (data.dots * zoom * 0.353) + 'mm;image-rendering:pixelated">';
+  const box = $('paperbox');
+  box.innerHTML = '';
+  const img = document.createElement('img');
+  img.src = 'data:image/png;base64,' + data.png;
+  img.alt = 'Pratinjau label';
+  img.dataset.dots = data.dots;
+  img.style.imageRendering = 'pixelated';
+  box.appendChild(img);
   $('notes').innerHTML = '';
   const how = data.source === 'browser'
-    ? ' \u00b7 dirender di browser (server tidak punya rasteriser PDF)'
+    ? ' · dirender di browser (server tidak punya rasteriser PDF)'
     : '';
   $('meta').textContent =
-    (data.build ? data.build + ' \u00b7 ' : '') +
-    data.dots + ' dots \u00b7 ' + data.height + ' baris \u00b7 ' +
-    (data.heightMM ? data.heightMM + 'mm \u00b7 ' : '') +
-    (data.sourceWidth ? 'sumber ' + data.sourceWidth + '\u00d7' + data.sourceHeight + ' \u00b7 ' : '') +
-    (data.bottomMM ? '+' + data.bottomMM + 'mm bawah \u00b7 ' : '') +
+    (data.build ? data.build + ' · ' : '') +
+    data.dots + ' dots · ' + data.height + ' baris · ' +
+    (data.heightMM ? data.heightMM + 'mm · ' : '') +
+    (data.sourceWidth ? 'sumber ' + data.sourceWidth + '×' + data.sourceHeight + ' · ' : '') +
+    (data.bottomMM ? '+' + data.bottomMM + 'mm bawah · ' : '') +
     (data.bytes ? data.bytes.toLocaleString() + ' bytes' : 'siap cetak') + how;
-  $('empty')?.remove();
+  applyZoom();
 }
 
 async function importPreview() {
-  clearSay();
-  try {
-    say('Meraster file...');
-    showImport(await postImport(false));
+  if (!$('imgfile').files[0]) {
     clearSay();
-  } catch (e) { say(e.message, 'err'); }
+    showEmpty('Belum ada file', 'Pilih atau seret PDF/PNG ke kotak di panel kiri.');
+    $('meta').textContent = '-';
+    return;
+  }
+  const mine = ++seq;
+  clearSay();
+  say('Meraster file...');
+  try {
+    const data = await postImport(false);
+    if (mine !== seq) return;
+    showImport(data);
+    clearSay();
+  } catch (e) { if (mine === seq) fail(e); }
 }
 
 async function importPrint() {
+  if (!$('imgfile').files[0]) { fail(new Error('pilih file PDF atau PNG dulu')); return; }
   const btn = $('print');
   btn.disabled = true;
+  say('Menghubungkan ke printer...');
   try {
-    say('Menghubungkan ke printer...');
     const data = await postImport(true);
     showImport(data);
-    say('Terkirim ' + data.printed.toLocaleString() + ' bytes (' + data.dots + ' dots \u00d7 ' + data.height + '), sama persis dengan pratinjau', 'ok');
-  } catch (e) { say(e.message, 'err'); } finally { btn.disabled = false; }
+    say('Terkirim ' + data.printed.toLocaleString() + ' bytes (' + data.dots + ' dots × ' + data.height + '), sama persis dengan pratinjau', 'ok');
+  } catch (e) { fail(e); } finally { btn.disabled = false; }
 }
 
 async function buildBody() {
@@ -496,7 +667,8 @@ async function buildBody() {
 async function preview() {
   clearSay();
   let body;
-  try { body = await buildBody(); } catch (e) { say(e.message, 'err'); return; }
+  try { body = await buildBody(); } catch (e) { fail(e); return; }
+  const mine = ++seq;
   say('Merender...');
   try {
     const res = await fetch('/api/preview', {
@@ -504,21 +676,22 @@ async function preview() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'render gagal');
+    if (mine !== seq) return;
     $('paperbox').innerHTML = data.svg;
     const svg = $('paperbox').querySelector('svg');
-    if (svg) svg.style.maxWidth = (data.dots * Number($('zoom').value) * 0.353) + 'mm';
-    $('notes').innerHTML = data.notes.map((n) => '<li>' + n + '</li>').join('');
-    $('meta').textContent = data.paper + 'mm \\u00b7 ' + data.dots + ' dots \\u00b7 ' + data.bytes.toLocaleString() + ' bytes';
-    $('empty')?.remove();
+    if (svg) svg.dataset.dots = data.dots;
+    $('notes').innerHTML = data.notes.map((n) => '<li>' + esc(n) + '</li>').join('');
+    $('meta').textContent = data.paper + 'mm · ' + data.dots + ' dots · ' + data.bytes.toLocaleString() + ' bytes';
+    applyZoom();
     clearSay();
   } catch (e) {
-    say(e.message, 'err');
+    if (mine === seq) fail(e);
   }
 }
 
 async function doPrint() {
   let body;
-  try { body = await buildBody(); } catch (e) { say(e.message, 'err'); return; }
+  try { body = await buildBody(); } catch (e) { fail(e); return; }
   body.device = $('device').value;
   const btn = $('print');
   btn.disabled = true;
@@ -531,20 +704,39 @@ async function doPrint() {
     if (!res.ok) throw new Error(data.error || 'gagal mencetak');
     say('Terkirim: ' + data.bytes.toLocaleString() + ' bytes ke ' + data.device + (data.tracking ? ' (' + data.tracking + ')' : ''), 'ok');
   } catch (e) {
-    say(e.message, 'err');
+    fail(e);
   } finally {
     btn.disabled = false;
   }
 }
 
+/** Add or reveal a device in the picker, so a scan result is usable right away. */
+function setDevice(value, label) {
+  const sel = $('device');
+  const known = [...sel.options].some((o) => o.value === value);
+  if (!known) {
+    const o = document.createElement('option');
+    o.value = value;
+    o.textContent = label + ' (hasil scan)';
+    sel.appendChild(o);
+  }
+  sel.value = value;
+  $('print').disabled = false;
+}
+
 async function loadPrinters() {
-  const res = await fetch('/api/printers');
-  const data = await res.json();
+  let data;
+  try {
+    const res = await fetch('/api/printers');
+    data = await res.json();
+  } catch (e) { fail(e); return; }
   printers = data.profiles || [];
   const sel = $('device');
   sel.innerHTML = '';
   if (!printers.length) {
     sel.innerHTML = '<option value="">belum ada printer</option>';
+    $('print').disabled = true;
+    showEmpty('Printer belum siap', 'Tekan "Scan BLE" di header, pilih printer yang muncul, lalu lanjut. Untuk menyimpan agar tidak perlu scan lagi: resi probe --save <nama>.');
     return;
   }
   for (const p of printers) {
@@ -554,16 +746,65 @@ async function loadPrinters() {
     sel.appendChild(o);
   }
   if (data.default) sel.value = data.default;
+  $('print').disabled = !sel.value;
+}
+
+function renderScanList(devices) {
+  const list = $('scanlist');
+  list.innerHTML = '';
+  if (!devices.length) {
+    const p = document.createElement('p');
+    p.className = 'hint';
+    p.textContent = 'Tidak ada perangkat yang terlihat. Pastikan printer menyala dan Bluetooth tidak dimatikan.';
+    list.appendChild(p);
+    return;
+  }
+  for (const d of devices) {
+    const row = document.createElement('button');
+    row.className = 'scanrow ghost';
+    row.type = 'button';
+    const nm = document.createElement('span');
+    nm.className = 'nm';
+    const b = document.createElement('b');
+    b.textContent = d.name || '(tanpa nama)';
+    const small = document.createElement('small');
+    small.textContent = d.id;
+    nm.append(b, small);
+    const rssi = document.createElement('span');
+    rssi.className = 'rssi';
+    rssi.textContent = d.rssi + ' dBm' + (d.connectable ? '' : ' · tidak bisa connect');
+    row.append(nm, rssi);
+    row.onclick = () => {
+      setDevice(d.id, d.name || 'Perangkat');
+      say('Printer tujuan: ' + (d.name || d.id) + '. Belum disimpan sebagai profil, jadi perlu dipilih lagi setelah refresh.', 'ok');
+      $('scandlg').close();
+    };
+    list.appendChild(row);
+  }
 }
 
 async function doScan() {
-  say('Memindai BLE sekitar 8 detik...');
+  const dlg = $('scandlg');
+  if (!dlg.open) dlg.showModal();
+  $('scanlist').innerHTML = '';
+  const p = document.createElement('p');
+  p.className = 'hint';
+  p.textContent = 'Memindai perangkat di sekitar, sekitar 8 detik...';
+  $('scanlist').appendChild(p);
+  $('scan-again').disabled = true;
   try {
     const res = await fetch('/api/scan');
     const data = await res.json();
-    const found = (data.devices || []).map((d) => d.name || d.id).join(', ') || 'tidak ada';
-    say('Ditemukan: ' + found, 'ok');
-  } catch (e) { say(e.message, 'err'); }
+    renderScanList(data.devices || []);
+  } catch (e) {
+    const p2 = document.createElement('p');
+    p2.className = 'hint warn';
+    p2.textContent = e && e.message ? e.message : 'scan gagal';
+    $('scanlist').innerHTML = '';
+    $('scanlist').appendChild(p2);
+  } finally {
+    $('scan-again').disabled = false;
+  }
 }
 
 const SAMPLE = [
@@ -575,33 +816,72 @@ const SAMPLE = [
   '1x Cover Tutup Knalpot Vario 125 / 150, PCX, Airblade - Model Baru',
 ].join('\\n');
 
-$('srcmode').onchange = () => {
+function isImport() { return $('srcmode').value === 'import'; }
+function render() { return isImport() ? importPreview() : preview(); }
+function schedulePreview() {
+  clearTimeout(debounce);
+  debounce = setTimeout(render, 500);
+}
+function showSource() {
   for (const k of ['text', 'pdf', 'import', 'form']) $('pane-' + k).hidden = k !== $('srcmode').value;
-  if ($('srcmode').value === 'import') importPreview(); else preview();
-};
+}
+
+$('srcmode').onchange = () => { showSource(); render(); };
 $('load-sample').onclick = () => { $('rawtext').value = SAMPLE; preview(); };
-$('clear').onclick = () => { $('rawtext').value = ''; $('paperbox').innerHTML = '<div class="empty">Pratinjau akan muncul di sini</div>'; $('notes').innerHTML = ''; };
+$('clear').onclick = () => {
+  $('rawtext').value = '';
+  $('notes').innerHTML = '';
+  $('meta').textContent = '-';
+  showEmpty('Teks dikosongkan', 'Tempel teks label atau tekan "Contoh" untuk melihat contoh.');
+};
 $('add-item').onclick = () => itemRow();
-$('refresh').onclick = () => ($('srcmode').value === 'import' ? importPreview() : preview());
-$('print').onclick = () => ($('srcmode').value === 'import' ? importPrint() : doPrint());
+$('refresh').onclick = render;
+$('print').onclick = () => (isImport() ? importPrint() : doPrint());
 $('scan').onclick = doScan;
-$('zoom').onchange = () => ($('srcmode').value === 'import' ? importPreview() : preview());
-for (const id of ['paper', 'bclayout']) $(id).onchange = () => ($('srcmode').value === 'import' ? importPreview() : preview());
-$('rawtext').oninput = () => { clearTimeout(debounce); debounce = setTimeout(preview, 500); };
+$('zoom').onchange = applyZoom; // rescale only, never re-render the page
+for (const id of ['paper', 'bclayout']) $(id).onchange = render;
+$('rawtext').oninput = schedulePreview;
 $('pdf').onchange = preview;
-$('imgfile').onchange = importPreview;
+$('imgfile').onchange = () => {
+  const f = $('imgfile').files[0];
+  $('dropname').textContent = f ? f.name + ' · ' + Math.round(f.size / 1024) + ' KB' : '';
+  importPreview();
+};
 for (const id of ['imp-dpi', 'imp-margin', 'imp-bottom', 'imp-threshold', 'imp-dither', 'imp-trim', 'imp-invert']) {
   $(id).onchange = importPreview;
 }
 for (const id of document.querySelectorAll('#pane-form input, #pane-form textarea')) {
-  id.oninput = () => { clearTimeout(debounce); debounce = setTimeout(preview, 600); };
+  id.oninput = schedulePreview;
 }
+for (const id of document.querySelectorAll('.item-row input')) id.oninput = schedulePreview;
+
+// Click or drag a PDF/PNG onto the drop zone. Keeping the real <input type=file>
+// hidden means the browser still handles picking, picking again, and drag order.
+const drop = $('drop');
+drop.onclick = () => $('imgfile').click();
+drop.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('imgfile').click(); } };
+for (const ev of ['dragenter', 'dragover']) {
+  drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); });
+}
+for (const ev of ['dragleave', 'drop']) {
+  drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); });
+}
+drop.addEventListener('drop', (e) => {
+  const f = e.dataTransfer && e.dataTransfer.files[0];
+  if (f) $('imgfile').files = e.dataTransfer.files;
+  $('imgfile').onchange();
+});
+
+$('scan-close').onclick = () => $('scandlg').close();
+$('scan-done').onclick = () => $('scandlg').close();
+$('scan-again').onclick = doScan;
 
 itemRow();
 loadPrinters();
 $('rawtext').value = SAMPLE;
-$('paperbox').innerHTML = '<div class="empty" id="empty">Pilih file PDF atau PNG untuk melihat pratinjau</div>';
-say('Pilih file PDF atau PNG di panel kiri.', 'ok');
+showSource();
+showEmpty('Pilih file PDF atau PNG', 'Kotak di panel kiri menerima file, atau seret langsung ke sana.');
+say('Pilih file PDF atau PNG untuk melihat pratinjau.', 'busy');
 </script>
 </body>
 </html>`;
