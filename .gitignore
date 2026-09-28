@@ -1,0 +1,5 @@
+node_modules/
+profiles/
+*.escpos
+tmp/
+.DS_Store

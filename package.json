@@ -1,0 +1,33 @@
+{
+  "name": "resi-printer",
+  "version": "1.0.0",
+  "description": "Print Shopee Xpress (SPX) resi labels on ESC/POS thermal printers over Bluetooth Low Energy",
+  "type": "module",
+  "bin": {
+    "resi": "./bin/resi.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "scan": "node bin/resi.mjs scan",
+    "probe": "node bin/resi.mjs probe",
+    "features": "node bin/resi.mjs features",
+    "preview": "node bin/resi.mjs preview --file assets/resi.pdf",
+    "print": "node bin/resi.mjs print",
+    "web": "node bin/resi.mjs web",
+    "selftest": "node bin/resi.mjs selftest",
+    "test": "node --test \"test/*.test.mjs\"",
+    "import": "node bin/resi.mjs import"
+  },
+  "dependencies": {
+    "@stoprocent/noble": "^2.8.0",
+    "pdfjs-dist": "^4.10.38",
+    "qrcode": "^1.5.4"
+  },
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "jsqr": "^1.4.0"
+  }
+}
