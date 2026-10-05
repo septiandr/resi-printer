@@ -34,6 +34,7 @@ PRINTING OPTIONS
   --no-qr              Do not print a QR code
   --cut <partial|full> Paper cut mode
   --no-cut             Do not issue a cut command
+  --no-cut-line        Do not print a cutting guide line at the bottom
   --notes "<text>"     Extra line printed before the cut
   --port <n>           Port for the web UI (default 8137)
   --no-open            Do not open a browser for the web UI

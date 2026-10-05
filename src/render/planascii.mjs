@@ -50,6 +50,25 @@ export function planToAscii(plan, { dots, cols = 64, showText = true } = {}) {
       case 'rule':
         hLine(op.x, op.y, op.w, op.thickness ?? 1);
         break;
+      case 'cutLine': {
+        const dash = op.dash ?? 12;
+        const gap = op.gap ?? 6;
+        let cur = op.x;
+        while (cur < op.x + op.w) {
+          const seg = Math.min(dash, op.x + op.w - cur);
+          for (let dy = 0; dy < (op.thickness ?? 2); dy++) {
+            for (let dx = 0; dx < seg; dx++) {
+              const cx = Math.floor((cur + dx) / px);
+              const cy = Math.floor((op.y + dy) / px / 2);
+              if (cx >= 0 && cx < width && cy >= 0 && cy < rows) {
+                grid[cy][cx] = '-';
+              }
+            }
+          }
+          cur += dash + gap;
+        }
+        break;
+      }
       case 'rect':
         rectInto(hLine, vLine, op);
         break;
@@ -132,6 +151,14 @@ function makeCanvas(width, height) {
     hLine: (x, y, len, t = 1) => {
       for (let dy = 0; dy < t; dy++) for (let dx = 0; dx < len; dx++) set(x + dx, y + dy);
     },
+    dashedHLine: (x, y, len, t = 1, dash = 12, gap = 6) => {
+      let cur = x;
+      while (cur < x + len) {
+        const seg = Math.min(dash, x + len - cur);
+        for (let dy = 0; dy < t; dy++) for (let dx = 0; dx < seg; dx++) set(cur + dx, y + dy);
+        cur += dash + gap;
+      }
+    },
     vLine: (x, y, len, t = 1) => {
       for (let dy = 0; dy < len; dy++) for (let dx = 0; dx < t; dx++) set(x + dx, y + dy);
     },
@@ -164,6 +191,9 @@ function applyArt(canvas, op) {
   switch (op.type) {
     case 'rule':
       canvas.hLine(op.x, op.y, op.w, op.thickness ?? 1);
+      break;
+    case 'cutLine':
+      canvas.dashedHLine(op.x, op.y, op.w, op.thickness ?? 2, op.dash ?? 12, op.gap ?? 6);
       break;
     case 'rect':
       canvas.rect(op.x, op.y, op.w, op.h, op.thickness ?? 1);

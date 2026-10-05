@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 
 import { loadConfig } from '../config.mjs';
 import { PrinterConnection } from '../ble/connect.mjs';
-import { prepareBitmap, bitmapToEscPos, trimWhite } from '../render/raster.mjs';
+import { prepareBitmap, bitmapToEscPos, trimWhite, appendCutLine } from '../render/raster.mjs';
 import { imageToGray } from '../render/rasterize.mjs';
 import { PAPER } from '../render/layout.mjs';
 import { c, confirm } from './shared.mjs';
@@ -81,6 +81,10 @@ export async function runImport(opts = {}, positional = []) {
     const pct = Number(opts.scale) / 100;
     bitmap = prepareBitmap(trimmed, { dots, threshold: Number(opts.threshold) || 128, dither: Boolean(opts.dither), invert: Boolean(opts.invert), trim: false });
     bitmap = { ...bitmap, width: Math.max(8, Math.round(bitmap.width * pct)), data: bitmap.data };
+  }
+
+  if (opts.cutLine !== false) {
+    bitmap = appendCutLine(bitmap);
   }
 
   const bytes = bitmapToEscPos(bitmap, {

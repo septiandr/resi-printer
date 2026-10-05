@@ -96,6 +96,17 @@ export function planToSvg(plan, { dots, paper = 58, title = '' } = {}) {
 
   for (const op of plan) {
     switch (op.type) {
+      case 'rule':
+        parts.push(
+          `<rect x="${op.x}" y="${op.y}" width="${op.w}" height="${op.thickness ?? 1}" fill="currentColor"/>`,
+        );
+        break;
+      case 'cutLine':
+        parts.push(
+          `<line x1="${op.x}" y1="${op.y}" x2="${op.x + op.w}" y2="${op.y}"` +
+            ` stroke="currentColor" stroke-width="${op.thickness ?? 2}" stroke-dasharray="${op.dash ?? 12} ${op.gap ?? 6}" shape-rendering="crispEdges"/>`,
+        );
+        break;
       case 'rect':
         parts.push(
           `<rect x="${op.x}" y="${op.y}" width="${op.w}" height="${op.h}"` +

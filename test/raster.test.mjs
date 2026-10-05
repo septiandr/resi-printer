@@ -11,6 +11,7 @@ import {
   trimWhite,
   bitmapToGray,
   bitmapToEscPos,
+  appendCutLine,
   edgePixelsForDpi,
 } from '../src/render/raster.mjs';
 
@@ -345,4 +346,35 @@ test('the blank paper under a label is sent as blank, not as burnt dots', () => 
   const blank = bytes.slice(bytes.length - 8);
   assert.deepEqual([...blank], new Array(8).fill(0), 'the last eight rows carry no ink');
   assert.deepEqual([...data], new Array(8).fill(0xff), 'and the artwork itself is untouched');
+});
+
+test('appendCutLine appends a dashed line with a blank gap', () => {
+  const width = 16;
+  const height = 4;
+  const data = new Uint8Array(width * height).fill(1);
+  const bitmap = { width, height, data };
+  const out = appendCutLine(bitmap, { gap: 3, thickness: 2, dash: 4, space: 4 });
+
+  assert.equal(out.width, width);
+  assert.equal(out.height, height + 3 + 2);
+
+  // Original artwork untouched
+  for (let i = 0; i < width * height; i++) {
+    assert.equal(out.data[i], 1);
+  }
+
+  // Gap rows are all 0 (blank paper)
+  for (let r = 0; r < 3; r++) {
+    const rowOffset = width * (height + r);
+    for (let x = 0; x < width; x++) {
+      assert.equal(out.data[rowOffset + x], 0);
+    }
+  }
+
+  // Dashed line rows (dash 4, space 4 across width 16: [1,1,1,1,0,0,0,0, 1,1,1,1,0,0,0,0])
+  for (let r = 0; r < 2; r++) {
+    const rowOffset = width * (height + 3 + r);
+    const expected = [1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0];
+    assert.deepEqual([...out.data.slice(rowOffset, rowOffset + width)], expected);
+  }
 });

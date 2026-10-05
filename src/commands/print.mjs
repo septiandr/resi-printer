@@ -133,7 +133,12 @@ export async function runConfig(opts) {
 function render(label, opts) {
   const paper = opts.paper ?? 58;
   const dots = paper === 80 ? 576 : 384;
-  const plan = buildPlan(label, { paper, density: 0, barcodeLayout: opts.barcodeLayout ?? 'auto' });
+  const plan = buildPlan(label, {
+    paper,
+    density: 0,
+    barcodeLayout: opts.barcodeLayout ?? 'auto',
+    cutLine: opts.cutLine !== false,
+  });
   const bytes = planToEscPos(plan, {
     dots,
     codePage: opts.codePage ?? 0,

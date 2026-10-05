@@ -225,6 +225,42 @@ export function appendBlankRows(bitmap, rows) {
 }
 
 /**
+ * Append a dashed cut line guide at the bottom of the bitmap.
+ *
+ * Adds `gap` blank rows of paper so the cut line does not crowd the bottom
+ * barcode or text, followed by `thickness` rows of a dashed line across the
+ * print head, providing a clear visual guide for manual tearing or scissors.
+ */
+export function appendCutLine(bitmap, { gap = 12, thickness = 2, dash = 12, space = 6 } = {}) {
+  const g = Math.max(0, Math.round(Number(gap) || 0));
+  const t = Math.max(1, Math.round(Number(thickness) || 1));
+  const addedRows = g + t;
+  const newHeight = bitmap.height + addedRows;
+  const newData = new Uint8Array(bitmap.data.length + bitmap.width * addedRows);
+
+  newData.set(bitmap.data, 0);
+
+  const lineStart = bitmap.data.length + bitmap.width * g;
+  const period = Math.max(2, dash + space);
+
+  for (let row = 0; row < t; row++) {
+    const rowOffset = lineStart + row * bitmap.width;
+    for (let x = 0; x < bitmap.width; x++) {
+      if (x % period < dash) {
+        newData[rowOffset + x] = 1;
+      }
+    }
+  }
+
+  return {
+    ...bitmap,
+    height: newHeight,
+    data: newData,
+    ...(bitmap.heightMM === undefined ? {} : { heightMM: Math.round(newHeight * 0.125) }),
+  };
+}
+
+/**
  * Emit the bitmap as GS v 0 raster bands, with `feed` dots of blank paper
  * under the label so a tear cannot chew the last row of dots.
  */

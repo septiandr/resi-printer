@@ -108,6 +108,9 @@ function applyArt(page, op, dots) {
     case 'rule':
       page.hLine(op.x, op.y, op.w, op.thickness ?? 1);
       break;
+    case 'cutLine':
+      page.dashedHLine(op.x, op.y, op.w, op.thickness ?? 2, op.dash ?? 12, op.gap ?? 6);
+      break;
     case 'rect':
       page.rect(op.x, op.y, op.w, op.h, op.thickness ?? 1);
       break;
@@ -167,6 +170,15 @@ class Page {
 
   hLine(x, y, w, t = 1) {
     for (let dy = 0; dy < t; dy++) for (let dx = 0; dx < w; dx++) this.set(x + dx, y + dy);
+  }
+
+  dashedHLine(x, y, w, t = 1, dash = 12, gap = 6) {
+    let cur = x;
+    while (cur < x + w) {
+      const len = Math.min(dash, x + w - cur);
+      for (let dy = 0; dy < t; dy++) for (let dx = 0; dx < len; dx++) this.set(cur + dx, y + dy);
+      cur += dash + gap;
+    }
   }
 
   vLine(x, y, h, t = 1) {

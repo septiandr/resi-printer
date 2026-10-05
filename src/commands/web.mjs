@@ -12,7 +12,7 @@ import { scan } from '../ble/scan.mjs';
 import { PrinterConnection } from '../ble/connect.mjs';
 import { decodePng, encodePng } from '../render/png.mjs';
 import { imageToGray, NoRasteriser } from '../render/rasterize.mjs';
-import { prepareBitmap, bitmapToEscPos, bitmapToGray, appendBlankRows } from '../render/raster.mjs';
+import { prepareBitmap, bitmapToEscPos, bitmapToGray, appendBlankRows, appendCutLine } from '../render/raster.mjs';
 import { HTML } from './webui.mjs';
 import { c } from './shared.mjs';
 
@@ -89,7 +89,8 @@ function render(body) {
   const { ok, errors } = validate(label);
   if (!ok) throw new Error(errors.join('; '));
 
-  const plan = buildPlan(label, { paper, barcodeLayout });
+  const cutLine = body.cutLine !== false;
+  const plan = buildPlan(label, { paper, barcodeLayout, cutLine });
   return {
     paper,
     dots,
@@ -222,6 +223,7 @@ async function handle(req, res) {
     // 203dpi is 8 dots to the millimetre.
     const bottomMM = Math.max(0, Number(body.bottom) || 0);
     const feed = Math.round(bottomMM * 8);
+    const cutLine = body.cutLine !== false;
 
     const key = createHash('sha256')
       .update(
@@ -233,6 +235,7 @@ async function handle(req, res) {
           ...options,
           cut: body.cut,
           feed,
+          cutLine,
         })
     )
       .digest('hex');
@@ -244,7 +247,8 @@ async function handle(req, res) {
         : prepareBitmap(gray, { ...options, trim: false });
       // The blank paper below the label is part of what gets printed, so the
       // preview has to carry it too or the two would not be the same label.
-      const printable = appendBlankRows(prepared, feed);
+      const withCutLine = cutLine ? appendCutLine(prepared) : prepared;
+      const printable = appendBlankRows(withCutLine, feed);
       const bytes = bitmapToEscPos(printable, {
         cut: body.cut === 'none' ? null : body.cut || 'partial',
       });

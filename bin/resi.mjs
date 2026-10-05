@@ -57,6 +57,7 @@ function options() {
     qr: argv.includes('--no-qr') ? false : flag('qr', undefined),
     noCut: argv.includes('--no-cut'),
     cut: flag('cut', undefined),
+    cutLine: argv.includes('--no-cut-line') ? false : true,
     timeout: flag('timeout', undefined) ? Number(flag('timeout')) : undefined,
     color: argv.includes('--color'),
     out: flag('out', undefined),

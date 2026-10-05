@@ -180,3 +180,16 @@ test('text labels round-trip through the parser', () => {
   assert.equal(label.receiver.name, 'Edwin suryo laksono');
   assert.equal(label.items.length, 1);
 });
+
+test('buildPlan includes cutLine by default below barcodes and excludes it when false', () => {
+  const plan = buildPlan(LABEL, { paper: 58 });
+  const cut = plan.find((p) => p.type === 'cutLine');
+  assert.ok(cut, 'cutLine must be present by default');
+  assert.equal(cut.thickness, 2);
+
+  const lastBarcode = plan.filter((p) => p.type === 'barcode').at(-1);
+  assert.ok(cut.y > lastBarcode.y + lastBarcode.h, 'cutLine must sit below the last barcode');
+
+  const planNoCut = buildPlan(LABEL, { paper: 58, cutLine: false });
+  assert.ok(!planNoCut.some((p) => p.type === 'cutLine'), 'cutLine must be omitted when cutLine=false');
+});

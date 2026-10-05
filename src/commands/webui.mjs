@@ -246,8 +246,8 @@ export function HTML() {
               </select>
             </div>
           </div>
-          <p class="hint">Margin bawah dipakai untuk menguji di mana garis potong
-            jatuh, bukan untuk pencetakan biasa.</p>
+          <p class="hint">Margin bawah memberi ruang kertas kosong di bawah garis potong
+            agar posisi garis potong keluar melewati pemotong printer.</p>
           <div class="field check">
             <input type="checkbox" id="imp-dither"><label for="imp-dither">Dither (untuk gambar abu-abu)</label>
           </div>
@@ -315,6 +315,9 @@ export function HTML() {
       </div>
     </div>
     <div class="field check" style="margin-top:4px">
+      <input type="checkbox" id="cutline" checked><label for="cutline">Garis potong di bagian bawah</label>
+    </div>
+    <div class="field check">
       <input type="checkbox" id="cut" checked><label for="cut">Potong kertas setelah cetak</label>
     </div>
     <div class="row" style="margin-top:14px">
@@ -559,6 +562,7 @@ function importBody(doPrint) {
     dither: $('imp-dither').checked,
     trim: $('imp-trim').checked,
     invert: $('imp-invert').checked,
+    cutLine: $('cutline').checked,
     cut: $('cut').checked ? 'partial' : 'none',
     device: $('device').value,
     print: doPrint,
@@ -651,7 +655,12 @@ async function importPrint() {
 
 async function buildBody() {
   const mode = $('srcmode').value;
-  const base = { paper: Number($('paper').value), barcodeLayout: $('bclayout').value, cut: $('cut').checked ? 'partial' : 'none' };
+  const base = {
+    paper: Number($('paper').value),
+    barcodeLayout: $('bclayout').value,
+    cutLine: $('cutline').checked,
+    cut: $('cut').checked ? 'partial' : 'none',
+  };
   if (mode === 'form') return { ...base, label: collectForm() };
   if (mode === 'pdf') {
     const file = $('pdf').files[0];
@@ -839,7 +848,7 @@ $('refresh').onclick = render;
 $('print').onclick = () => (isImport() ? importPrint() : doPrint());
 $('scan').onclick = doScan;
 $('zoom').onchange = applyZoom; // rescale only, never re-render the page
-for (const id of ['paper', 'bclayout']) $(id).onchange = render;
+for (const id of ['paper', 'bclayout', 'cutline']) $(id).onchange = render;
 $('rawtext').oninput = schedulePreview;
 $('pdf').onchange = preview;
 $('imgfile').onchange = () => {

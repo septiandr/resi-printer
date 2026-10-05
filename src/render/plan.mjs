@@ -18,7 +18,7 @@ export const LINE = 24; // font C cell height
 export const FONT_A_W = 12; // font A cell width
 export const FONT_C_W = 6; // font C cell width
 
-export function buildPlan(label, { paper = 58, density = 0, qr = true, barcodeLayout = 'auto' } = {}) {
+export function buildPlan(label, { paper = 58, density = 0, qr = true, barcodeLayout = 'auto', cutLine = true } = {}) {
   const dots = paper === 80 ? 576 : 384;
   const plan = [];
   const ctx = { dots, plan, y: 0, density, notes: [] };
@@ -153,13 +153,27 @@ export function buildPlan(label, { paper = 58, density = 0, qr = true, barcodeLa
   ctx.y += LINE;
 
   // --- bottom barcode row --------------------------------------------------
-  ctx.y += emitBottomBarcodes(ctx, label, { dots, paper, barcodeLayout });
+  emitBottomBarcodes(ctx, label, { dots, paper, barcodeLayout });
 
   if (qr && label.qr) {
     const size = Math.round(dots * 0.22);
     const cy = Math.round(ctx.y + ctx.dots * 0.02);
     qrAt(ctx, label.qr, { x: Math.round(dots * 0.06), y: cy, size });
     ctx.y = cy + size + 6;
+  }
+
+  if (cutLine) {
+    ctx.y += 12;
+    plan.push({
+      type: 'cutLine',
+      x: 0,
+      y: ctx.y,
+      w: dots,
+      thickness: 2,
+      dash: 12,
+      gap: 6,
+    });
+    ctx.y += 4;
   }
 
   plan.push({ type: 'note', note: `label height ${ctx.y} dots (${(ctx.y / 8).toFixed(0)}mm)` });
@@ -274,7 +288,7 @@ function layoutNote(where, mm, { across, forced }) {
 
 function emitBottomBarcodes(ctx, label, { dots, paper, barcodeLayout }) {
   const data = label.trackingNumber;
-  if (!data) return 0;
+  if (!data) return;
   const layout = resolveBarcodeLayout(dots, data, barcodeLayout);
   ctx.plan.push({ type: 'note', note: layoutNote('bottom', paper, layout) });
 
@@ -286,7 +300,8 @@ function emitBottomBarcodes(ctx, label, { dots, paper, barcodeLayout }) {
       barcodeInCell(ctx, data, { x: x + 3, y: ctx.y + 3, w: cellW - 6, h: h - 26 });
       text(ctx, data, { x, y: ctx.y + h - 22, w: cellW, align: 'center' });
     }
-    return h + 4;
+    ctx.y += h + 4;
+    return;
   }
 
   const h = 40;
@@ -295,7 +310,7 @@ function emitBottomBarcodes(ctx, label, { dots, paper, barcodeLayout }) {
     barcodeInCell(ctx, data, { x: 8, y: ctx.y + 3, w: dots - 16, h: h - 8 });
     ctx.y += h + 2;
   }
-  return 4;
+  ctx.y += 4;
 }
 
 function addressLines(party) {
