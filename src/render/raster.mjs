@@ -229,12 +229,13 @@ export function appendBlankRows(bitmap, rows) {
  *
  * Adds `gap` blank rows of paper so the cut line does not crowd the bottom
  * barcode or text, followed by `thickness` rows of a dashed line across the
- * print head, providing a clear visual guide for manual tearing or scissors.
+ * print head, and optionally `tail` (or `after`) blank rows after the line.
  */
-export function appendCutLine(bitmap, { gap = 12, thickness = 2, dash = 12, space = 6 } = {}) {
+export function appendCutLine(bitmap, { gap = 12, thickness = 2, dash = 12, space = 6, tail = 0, after = 0 } = {}) {
   const g = Math.max(0, Math.round(Number(gap) || 0));
   const t = Math.max(1, Math.round(Number(thickness) || 1));
-  const addedRows = g + t;
+  const a = Math.max(0, Math.round(Number(after || tail) || 0));
+  const addedRows = g + t + a;
   const newHeight = bitmap.height + addedRows;
   const newData = new Uint8Array(bitmap.data.length + bitmap.width * addedRows);
 

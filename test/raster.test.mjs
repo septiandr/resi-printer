@@ -414,3 +414,29 @@ test('appendCutLine places cut line at the outer edge of bottom margin', () => {
     assert.deepEqual([...out.data.slice(rowOffset, rowOffset + width)], [1, 1, 1, 1, 0, 0, 0, 0]);
   }
 });
+
+test('appendCutLine supports tail margin after the cut line', () => {
+  const width = 8;
+  const height = 2;
+  const data = new Uint8Array(width * height).fill(1);
+  const bitmap = { width, height, data };
+  const gapDots = 24; // 3 mm before cut line
+  const tailDots = 80; // 10 mm after cut line
+  const out = appendCutLine(bitmap, { gap: gapDots, thickness: 2, dash: 4, space: 4, tail: tailDots });
+
+  assert.equal(out.height, height + gapDots + 2 + tailDots);
+
+  // Check cut line position
+  for (let r = 0; r < 2; r++) {
+    const rowOffset = width * (height + gapDots + r);
+    assert.deepEqual([...out.data.slice(rowOffset, rowOffset + width)], [1, 1, 1, 1, 0, 0, 0, 0]);
+  }
+
+  // Check tail rows after cut line are blank paper
+  for (let r = 0; r < tailDots; r++) {
+    const rowOffset = width * (height + gapDots + 2 + r);
+    for (let x = 0; x < width; x++) {
+      assert.equal(out.data[rowOffset + x], 0);
+    }
+  }
+});

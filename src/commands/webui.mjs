@@ -248,7 +248,7 @@ export function HTML() {
               </select>
             </div>
           </div>
-          <p class="hint">Margin bawah memberi ruang kosong sebelum garis potong (garis potong di ujung margin).</p>
+          <p class="hint">Margin bawah memberi ruang kosong sebelum garis potong. Setelah garis potong terdapat jarak margin bawah 10 mm.</p>
           <div class="field check">
             <input type="checkbox" id="imp-dither"><label for="imp-dither">Dither (untuk gambar abu-abu)</label>
           </div>

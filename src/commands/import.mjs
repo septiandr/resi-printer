@@ -83,15 +83,16 @@ export async function runImport(opts = {}, positional = []) {
     bitmap = { ...bitmap, width: Math.max(8, Math.round(bitmap.width * pct)), data: bitmap.data };
   }
 
+  const cutTailDots = Math.round(10 * 8);
   if (opts.cutLine !== false) {
-    bitmap = appendCutLine(bitmap, { gap: feed });
+    bitmap = appendCutLine(bitmap, { gap: feed, tail: cutTailDots });
   } else if (feed > 0) {
     bitmap = appendBlankRows(bitmap, feed);
   }
 
   const bytes = bitmapToEscPos(bitmap, {
     cut: opts.cut === 'none' ? null : opts.cut || 'partial',
-    feed: 40,
+    feed: opts.cutLine !== false ? 0 : 40,
   });
   let ink = 0;
   for (const v of bitmap.data) ink += v;
