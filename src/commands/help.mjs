@@ -46,6 +46,7 @@ IMPORT OPTIONS (resi import)
   --invert             Print light areas dark
   --no-trim            Keep the page's white margin instead of cropping to ink
   --margin <n>         Dots of white to keep around the artwork. Default 3
+  --bottom <mm>        Bottom margin in mm before the cut line. Default 5
   --scale <pct>        Print at this size instead of filling the paper width
   --probe-width        Print a dot ruler to measure the real print head
   --write-uuid <uuid>  Override the characteristic used to send data

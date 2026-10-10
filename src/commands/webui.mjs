@@ -238,16 +238,17 @@ export function HTML() {
             <div class="field">
               <label for="imp-bottom">Margin bawah</label>
               <select id="imp-bottom">
-                <option value="0">0 mm</option>
+                <option value="0">0 mm (tanpa margin)</option>
                 <option value="5" selected>5 mm</option>
-                <option value="8">8 mm</option>
-                <option value="12">12 mm</option>
-                <option value="100">100 mm (kertas pendek, uji potong)</option>
+                <option value="10">10 mm</option>
+                <option value="15">15 mm</option>
+                <option value="20">20 mm</option>
+                <option value="25">25 mm</option>
+                <option value="30">30 mm</option>
               </select>
             </div>
           </div>
-          <p class="hint">Margin bawah memberi ruang kertas kosong di bawah garis potong
-            agar posisi garis potong keluar melewati pemotong printer.</p>
+          <p class="hint">Margin bawah memberi ruang kosong sebelum garis potong (garis potong di ujung margin).</p>
           <div class="field check">
             <input type="checkbox" id="imp-dither"><label for="imp-dither">Dither (untuk gambar abu-abu)</label>
           </div>

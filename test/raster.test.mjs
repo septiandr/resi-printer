@@ -378,3 +378,39 @@ test('appendCutLine appends a dashed line with a blank gap', () => {
     assert.deepEqual([...out.data.slice(rowOffset, rowOffset + width)], expected);
   }
 });
+
+test('appendCutLine with gap 0 places cut line immediately at bottom of artwork', () => {
+  const width = 8;
+  const height = 2;
+  const data = new Uint8Array(width * height).fill(1);
+  const bitmap = { width, height, data };
+  const out = appendCutLine(bitmap, { gap: 0, thickness: 1, dash: 4, space: 4 });
+
+  assert.equal(out.height, height + 1);
+  // Cut line immediately at row 2
+  const cutRow = [...out.data.slice(width * height, width * (height + 1))];
+  assert.deepEqual(cutRow, [1, 1, 1, 1, 0, 0, 0, 0]);
+});
+
+test('appendCutLine places cut line at the outer edge of bottom margin', () => {
+  const width = 8;
+  const height = 2;
+  const data = new Uint8Array(width * height).fill(1);
+  const bitmap = { width, height, data };
+  const marginDots = 40; // 5 mm * 8 dots/mm
+  const out = appendCutLine(bitmap, { gap: marginDots, thickness: 2, dash: 4, space: 4 });
+
+  assert.equal(out.height, height + marginDots + 2);
+  // Margin rows are all blank paper
+  for (let r = 0; r < marginDots; r++) {
+    const rowOffset = width * (height + r);
+    for (let x = 0; x < width; x++) {
+      assert.equal(out.data[rowOffset + x], 0);
+    }
+  }
+  // Cut line sits at the outer edge (rows height + marginDots .. height + marginDots + 1)
+  for (let r = 0; r < 2; r++) {
+    const rowOffset = width * (height + marginDots + r);
+    assert.deepEqual([...out.data.slice(rowOffset, rowOffset + width)], [1, 1, 1, 1, 0, 0, 0, 0]);
+  }
+});

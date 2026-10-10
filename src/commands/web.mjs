@@ -247,10 +247,13 @@ async function handle(req, res) {
         : prepareBitmap(gray, { ...options, trim: false });
       // The blank paper below the label is part of what gets printed, so the
       // preview has to carry it too or the two would not be the same label.
-      const withCutLine = cutLine ? appendCutLine(prepared) : prepared;
-      const printable = appendBlankRows(withCutLine, feed);
+      // When cutLine is active, the cut line sits at the outer edge of the margin.
+      const printable = cutLine
+        ? appendCutLine(prepared, { gap: feed })
+        : appendBlankRows(prepared, feed);
       const bytes = bitmapToEscPos(printable, {
         cut: body.cut === 'none' ? null : body.cut || 'partial',
+        feed: 40,
       });
       job = {
         bytes,
