@@ -9,7 +9,7 @@ import { encodeQR, matrixToRaster } from '../escpos/qr.mjs';
  * (fonts, emphasis, rules, CODE128 and a QR) so you can tell at a glance
  * whether the paper width, density and character set are right.
  */
-export function buildSelfTest({ paper = 58, tracking = 'SPXID065670267489' } = {}) {
+export function buildSelfTest({ paper = 80, tracking = 'SPXID065670267489' } = {}) {
   const cols = paper === 80 ? 48 : 32;
   const b = new EscPosBuilder();
   b.init();

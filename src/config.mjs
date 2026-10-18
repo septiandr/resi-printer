@@ -9,7 +9,7 @@ const CONFIG_DIR = path.join(ROOT, 'profiles');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 
 const DEFAULTS = {
-  paper: 58,
+  paper: 80,
   device: null,
   codePage: 0,
   cut: 'partial',

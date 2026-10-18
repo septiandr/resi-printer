@@ -43,7 +43,7 @@ export async function runPrint(opts) {
   const labels = await gatherLabels(opts);
   if (!labels.length) throw new Error('Nothing to print');
 
-  const paper = PAPER[opts.paper ?? 58] ?? { name: `${opts.paper ?? 58}mm` };
+  const paper = PAPER[opts.paper ?? 80] ?? { name: `${opts.paper ?? 80}mm` };
 
   if (opts.dryRun) {
     for (const label of labels) {
@@ -144,7 +144,7 @@ export async function runConfig(opts) {
 
 /** Compile a label into a dot plan plus its ESC/POS bytes. */
 function render(label, opts) {
-  const paper = opts.paper ?? 58;
+  const paper = opts.paper ?? 80;
   const dots = paper === 80 ? 576 : 384;
   const plan = buildPlan(label, {
     paper,
@@ -217,7 +217,7 @@ function report(label, opts) {
     for (const e of errors) process.stdout.write(`${c.red('error')} ${e}\n`);
     throw new Error(`Label is not printable (${errors.join('; ')}). Fix the input or use the interactive form.`);
   }
-  const paper = opts.paper ?? 58;
+  const paper = opts.paper ?? 80;
   process.stdout.write(`${c.dim(`resi ${label.trackingNumber} · ${PAPER[paper]?.name ?? paper} · ${label.items.length} item(s)`)}\n`);
 }
 
