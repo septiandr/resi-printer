@@ -14,6 +14,7 @@ import {
   appendCutLine,
   edgePixelsForDpi,
 } from '../src/render/raster.mjs';
+import { imagesToGray } from '../src/render/rasterize.mjs';
 
 /** Build a grayscale image from a tiny ASCII sketch: '#' ink, anything else paper. */
 function sketch(rows) {
@@ -439,4 +440,14 @@ test('appendCutLine supports tail margin after the cut line', () => {
       assert.equal(out.data[rowOffset + x], 0);
     }
   }
+});
+
+test('imagesToGray returns array of pages for a PDF', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const bytes = await readFile(new URL('../assets/resi.pdf', import.meta.url));
+  const pages = await imagesToGray({ bytes, name: 'resi.pdf', dpi: 203 });
+  assert.equal(pages.length, 1);
+  assert.ok(pages[0].width > 100);
+  assert.ok(pages[0].height > 100);
+  assert.ok(pages[0].gray instanceof Uint8Array);
 });

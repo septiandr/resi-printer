@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -32,28 +33,55 @@ export async function pdfLongEdgePoints(bytes) {
 }
 
 /**
- * Rasterise a PDF to PNG bytes.
+ * Rasterise all pages of a PDF to PNG byte buffers.
  *
- * pdfjs can measure a page but it needs a canvas to draw one, which would mean a
- * native module. On macOS the system's own Quick Look renderer is used instead;
- * it takes the pixel size of the long edge, which comes from the page's real
- * dimensions since a PDF page is measured in points, 72 to the inch.
- *
- * Everything that imports a PDF goes through here, so the preview in the web UI
- * and the CLI produce the same dots from the same file.
+ * Uses native macOS PDFKit helper when available to render every page fast and
+ * at high DPI, falling back to Quick Look (qlmanage) or throwing NoRasteriser.
  */
-export async function pdfToPng(bytes, dpi) {
+export async function pdfToPngs(bytes, dpi = 450) {
   if (process.platform !== 'darwin') {
     throw new NoRasteriser(
       'this machine has no PDF rasteriser; use the browser fallback or convert the page to PNG'
     );
   }
   const dir = await mkdtemp(path.join(os.tmpdir(), 'resi-raster-'));
-  const file = path.join(dir, 'page.pdf');
+  const file = path.join(dir, 'input.pdf');
   try {
-    const { writeFile } = await import('node:fs/promises');
+    const { writeFile, readFile } = await import('node:fs/promises');
     await writeFile(file, bytes);
 
+    const helper = path.resolve(import.meta.dirname, '../../bin/render-pdf');
+    let usedHelper = false;
+
+    if (!existsSync(helper)) {
+      const swiftSrc = path.resolve(import.meta.dirname, '../bin/render-pdf.swift');
+      if (existsSync(swiftSrc)) {
+        try {
+          await run('swiftc', ['-O', '-o', helper, swiftSrc]);
+        } catch {
+          // ignore compile error and use fallback
+        }
+      }
+    }
+
+    if (existsSync(helper)) {
+      try {
+        await run(helper, [file, dir, String(dpi)]);
+        usedHelper = true;
+      } catch {
+        // helper failed, fall through to qlmanage
+      }
+    }
+
+    if (usedHelper) {
+      const made = await readdir(dir);
+      const pngs = made.filter((f) => f.toLowerCase().endsWith('.png')).sort();
+      if (pngs.length > 0) {
+        return await Promise.all(pngs.map((p) => readFile(path.join(dir, p))));
+      }
+    }
+
+    // Fallback: qlmanage (thumbnail of first page)
     const longPt = await pdfLongEdgePoints(bytes);
     const size = String(Math.max(600, edgePixelsForDpi(longPt, dpi, MAX_EDGE)));
     await run('qlmanage', ['-t', '-s', size, '-o', dir, file]);
@@ -61,31 +89,41 @@ export async function pdfToPng(bytes, dpi) {
     const made = await readdir(dir);
     const png = made.find((f) => f.toLowerCase().endsWith('.png'));
     if (!png) throw new Error('the PDF rasteriser produced no image');
-    const { readFile } = await import('node:fs/promises');
-    return await readFile(path.join(dir, png));
+    return [await readFile(path.join(dir, png))];
   } catch (err) {
     if (err instanceof NoRasteriser) throw err;
-    if (err.code === 'ENOENT') throw new NoRasteriser('qlmanage is not available');
+    if (err.code === 'ENOENT') throw new NoRasteriser('PDF rasteriser is not available');
     throw new Error(`could not rasterise the PDF: ${(err.stderr || err.message).toString().trim()}`);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
 }
 
+/** Rasterise the first page of a PDF to PNG bytes (backward compatibility). */
+export async function pdfToPng(bytes, dpi) {
+  const list = await pdfToPngs(bytes, dpi);
+  return list[0];
+}
+
 /**
- * Turn an imported file into greyscale samples.
- *
- * `name` picks the route: a PNG is decoded as it is, a PDF is rasterised at the
- * requested dpi. Returns the same shape `decodePng` gives, so every later stage
- * - trim, scale, threshold, GS v 0 - is shared.
+ * Turn an imported file into an array of greyscale samples (one per page).
  */
-export async function imageToGray({ bytes, name = '', dpi = 450 }) {
+export async function imagesToGray({ bytes, name = '', dpi = 450 }) {
   const ext = path.extname(name).toLowerCase();
   if (ext === '.pdf' || (!ext && looksLikePdf(bytes))) {
-    return decodePng(await pdfToPng(bytes, dpi));
+    const pngs = await pdfToPngs(bytes, dpi);
+    return pngs.map((p) => decodePng(p));
   }
-  if (ext === '.png' || !ext) return decodePng(bytes);
+  if (ext === '.png' || !ext) return [decodePng(bytes)];
   throw new NoRasteriser(`import supports .pdf and .png, not ${ext || 'this file type'}`);
+}
+
+/**
+ * Turn an imported file into greyscale samples of the first page.
+ */
+export async function imageToGray(opts) {
+  const list = await imagesToGray(opts);
+  return list[0];
 }
 
 function looksLikePdf(bytes) {

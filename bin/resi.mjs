@@ -45,11 +45,13 @@ function positional() {
 }
 
 function options() {
+  const pos = positional();
   return {
     device: flag('device', undefined) ?? flag('id', undefined),
     paper: flag('paper', undefined) ? Number(flag('paper')) : undefined,
     cols: flag('cols', undefined) ? Number(flag('cols')) : undefined,
-    file: flag('file', undefined),
+    file: flag('file', undefined) ?? (pos[0] && !pos[0].startsWith('-') ? pos[0] : undefined),
+    files: pos.length > 0 ? pos : undefined,
     text: flag('text', undefined),
     codePage: flag('code-page', undefined) ? Number(flag('code-page')) : undefined,
     moduleWidth: flag('module-width', undefined) ? Number(flag('module-width')) : undefined,

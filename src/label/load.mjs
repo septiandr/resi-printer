@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createLabel } from './model.mjs';
-import { parsePdfLabel, parseTextLabel, parseObjectLabel } from './parse.mjs';
+import { parsePdfLabels, parsePdfLabel, parseTextLabel, parseObjectLabel } from './parse.mjs';
 
 /** Load a label from a JSON file. */
 export async function fromJsonFile(file) {
@@ -20,7 +20,7 @@ export async function fromJsonFile(file) {
 export async function fromFile(file) {
   const ext = path.extname(file).toLowerCase();
   if (ext === '.json') return fromJsonFile(file);
-  if (ext === '.pdf') return [await parsePdfLabel(file)];
+  if (ext === '.pdf') return parsePdfLabels(file);
   if (ext === '.txt' || ext === '.text') {
     return [parseTextLabel(await readFile(file, 'utf8'))];
   }

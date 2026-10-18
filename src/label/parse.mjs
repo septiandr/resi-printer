@@ -10,11 +10,19 @@ import { createLabel, TRACKING_RE } from './model.mjs';
  * parse from box coordinates rather than the flattened string.
  */
 
-/** Parse a PDF produced by the Shopee Express label generator. */
-export async function parsePdfLabel(pdfPath) {
+/** Parse all labels in a PDF produced by the Shopee Express label generator (one per page). */
+export async function parsePdfLabels(pdfPath) {
   const pages = await extractBoxes(pdfPath);
   if (!pages.length) throw new Error('PDF has no pages');
-  return parseBoxes(pages.flatMap((p) => p.boxes), { source: pdfPath });
+  return pages.map((p, i) =>
+    parseBoxes(p.boxes, { source: pages.length > 1 ? `${pdfPath}#${i + 1}` : pdfPath })
+  );
+}
+
+/** Parse the first label of a PDF (backward compatibility). */
+export async function parsePdfLabel(pdfPath) {
+  const labels = await parsePdfLabels(pdfPath);
+  return labels[0];
 }
 
 /**

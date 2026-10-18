@@ -32,6 +32,7 @@ export function HTML() {
     }
   }
   * { box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
     font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -43,7 +44,7 @@ export function HTML() {
   header {
     display: flex; align-items: center; gap: 12px; padding: 12px 20px;
     border-bottom: 1px solid var(--line); background: var(--panel);
-    position: sticky; top: 0; z-index: 5; flex-wrap: wrap;
+    height: 57px; flex-shrink: 0; box-sizing: border-box;
   }
   header h1 { font-size: 16px; margin: 0; letter-spacing: .3px; white-space: nowrap; }
   header h1 span { color: var(--accent); }
@@ -51,15 +52,22 @@ export function HTML() {
   .header-tools { display: flex; align-items: center; gap: 8px; }
   #device { width: auto; min-width: 190px; }
 
-  main { display: grid; grid-template-columns: 400px 1fr; min-height: calc(100vh - 57px); }
-  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+  main {
+    display: grid; grid-template-columns: 380px 1fr;
+    height: calc(100vh - 57px); overflow: hidden;
+  }
+  @media (max-width: 980px) {
+    html, body { overflow: auto; height: auto; }
+    main { grid-template-columns: 1fr; height: auto; overflow: visible; }
+    header { height: auto; position: static; }
+  }
 
   .side {
     border-right: 1px solid var(--line); padding: 18px; background: var(--panel);
-    max-height: calc(100vh - 57px); overflow: auto; position: sticky; top: 57px;
+    height: 100%; overflow-y: auto; box-sizing: border-box;
   }
   @media (max-width: 980px) {
-    .side { border-right: 0; border-bottom: 1px solid var(--line); max-height: none; position: static; }
+    .side { border-right: 0; border-bottom: 1px solid var(--line); height: auto; }
   }
   .side h2 {
     font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
@@ -98,36 +106,85 @@ export function HTML() {
   .drop b { color: var(--text); }
   .drop .fname { display: block; margin-top: 8px; font-size: 12px; color: var(--ok); word-break: break-all; }
 
-  .stage { padding: 24px; overflow: auto; display: flex; flex-direction: column; }
-  .toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-bottom: 16px; }
-  .toolbar .field { margin: 0; min-width: 120px; }
-  .meta { font-size: 12px; color: var(--muted); padding: 8px 0; }
+  .stage {
+    padding: 24px 20px 80px; overflow-y: auto; overflow-x: hidden;
+    display: flex; flex-direction: column; align-items: center;
+    background: #181b22; box-sizing: border-box; height: 100%;
+  }
+  .toolbar {
+    width: 100%; max-width: 580px; display: flex; flex-wrap: wrap; align-items: center;
+    gap: 12px; margin-bottom: 24px; background: rgba(30, 36, 46, 0.9);
+    backdrop-filter: blur(8px); padding: 8px 14px; border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1); color: #e2e8f0;
+  }
+  .toolbar .field { margin: 0; min-width: 80px; }
+  .toolbar label { color: #94a3b8; font-size: 11px; margin-bottom: 2px; }
+  .toolbar select {
+    background: #252b37; color: #f1f5f9; border: 1px solid #3e4758;
+    padding: 4px 8px; font-size: 12px; border-radius: 4px;
+  }
+  .toolbar .meta { font-size: 11px; color: #94a3b8; padding: 0; }
+  .pagenav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .pagenav-btn {
+    padding: 3px 8px; font-size: 11px; border-radius: 4px; background: #252b37;
+    color: #e2e8f0; border: 1px solid #3e4758; cursor: pointer;
+  }
+  .pagenav-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-  .paper {
-    background: var(--paper); border-radius: 6px; padding: 18px; display: flex;
-    justify-content: center; box-shadow: var(--shadow); flex: 1;
+  .paper-feed {
+    display: flex; flex-direction: column; align-items: center; gap: 32px; width: 100%;
+  }
+  .paper-receipt {
+    position: relative; background: #ffffff; color: #000000;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.45), 0 2px 5px rgba(0, 0, 0, 0.2);
+    border-radius: 4px 4px 0 0; padding: 14px 12px; display: flex;
+    flex-direction: column; align-items: center; box-sizing: border-box;
+    transition: width 0.15s ease;
+  }
+  .receipt-header {
+    width: 100%; display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px dashed #cbd5e1;
+    font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #64748b; font-weight: 600;
+  }
+  .receipt-header .badge {
+    background: #e2e8f0; color: #1e293b; padding: 2px 7px; border-radius: 4px; font-size: 10px;
+  }
+  .paper-receipt img {
+    display: block; image-rendering: pixelated; height: auto; max-width: 100%;
+  }
+  .paper-receipt svg {
+    display: block; max-width: 100%; height: auto;
+  }
+  .receipt-tear {
+    width: 100%; display: flex; align-items: center; justify-content: center;
+    color: #94a3b8; font-size: 11px; font-family: ui-monospace, monospace;
+    padding-top: 10px; margin-top: 6px; border-top: 1px dashed #cbd5e1; user-select: none;
   }
   .label-svg { width: 100%; max-width: 420px; height: auto; display: block; }
   .label-svg * { vector-effect: non-scaling-stroke; }
-  .empty { color: var(--muted); text-align: center; padding: 80px 20px; margin: auto; max-width: 380px; }
-  .empty b { color: var(--text); display: block; margin-bottom: 6px; font-size: 14px; }
 
-  .notes { margin: 14px 0 0; padding: 0; list-style: none; }
+  .empty {
+    background: #ffffff; color: #475569; border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    text-align: center; padding: 50px 24px; margin: 40px auto; max-width: 420px; width: 100%;
+  }
+  .empty b { color: #0f172a; display: block; margin-bottom: 8px; font-size: 15px; }
+
+  .notes { margin: 16px 0 0; padding: 0; list-style: none; max-width: 580px; width: 100%; }
   .notes li {
-    font-size: 12px; color: var(--muted); padding: 5px 9px; border-left: 2px solid var(--line);
-    margin-bottom: 4px; background: var(--panel); border-radius: 0 4px 4px 0;
+    font-size: 12px; color: #cbd5e1; padding: 6px 12px; border-left: 3px solid var(--accent);
+    margin-bottom: 6px; background: rgba(30, 36, 46, 0.9); border-radius: 0 6px 6px 0;
   }
   .status {
-    margin-top: 14px; padding: 10px 12px; border-radius: 6px; font-size: 13px;
-    display: none; white-space: pre-wrap;
+    margin-top: 16px; padding: 10px 14px; border-radius: 6px; font-size: 13px;
+    display: none; white-space: pre-wrap; max-width: 580px; width: 100%;
   }
   .status.show { display: block; }
   .status.ok { background: var(--tint-ok); border: 1px solid var(--ok); color: var(--ok); }
   .status.err { background: var(--tint-err); border: 1px solid var(--err); color: var(--err); }
-  .status.busy { background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); }
+  .status.busy { background: rgba(30, 36, 46, 0.9); border: 1px solid #3e4758; color: #cbd5e1; }
   .status.busy::before {
     content: ''; display: inline-block; width: 10px; height: 10px; margin-right: 8px;
-    border: 2px solid var(--line); border-top-color: var(--accent);
+    border: 2px solid #3e4758; border-top-color: var(--accent);
     border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -1px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -304,7 +361,7 @@ export function HTML() {
     <div class="row">
       <div class="field">
         <label for="paper">Lebar kertas</label>
-        <select id="paper"><option value="58">58 mm</option><option value="80" selected>80 mm</option></select>
+        <select id="paper"><option value="58" selected>58 mm (RPP02N / standar)</option><option value="80">80 mm</option></select>
       </div>
       <div class="field">
         <label for="bclayout">Tata letak barcode</label>
@@ -330,19 +387,20 @@ export function HTML() {
   <section class="stage">
     <div class="toolbar">
       <div class="field">
-        <label for="zoom">Zoom pratinjau</label>
+        <label for="zoom">Zoom</label>
         <select id="zoom">
           <option value="0.35">35%</option><option value="0.5">50%</option>
           <option value="0.75" selected>75%</option><option value="1">100%</option>
         </select>
       </div>
+      <div class="pagenav" id="pagenav" hidden></div>
       <div class="spacer" style="flex:1"></div>
-      <div class="field" style="min-width:220px">
+      <div class="field" style="min-width:180px">
         <label>Hasil render</label>
         <div class="meta" id="meta">-</div>
       </div>
     </div>
-    <div class="paper" id="paperbox"></div>
+    <div class="paper-feed" id="paperbox"></div>
     <ul class="notes" id="notes"></ul>
     <div class="status" id="status" role="status" aria-live="polite"></div>
   </section>
@@ -388,6 +446,7 @@ function fail(e) { say(e && e.message ? e.message : String(e), 'err'); }
 function showEmpty(title, body) {
   const box = $('paperbox');
   box.innerHTML = '';
+  renderPageNav(0);
   const d = document.createElement('div');
   d.className = 'empty';
   const b = document.createElement('b');
@@ -397,13 +456,42 @@ function showEmpty(title, body) {
   box.appendChild(d);
 }
 
+function renderPageNav(count) {
+  const nav = $('pagenav');
+  if (!nav) return;
+  nav.innerHTML = '';
+  if (count <= 1) {
+    nav.hidden = true;
+    return;
+  }
+  nav.hidden = false;
+  const label = document.createElement('span');
+  label.textContent = 'Halaman:';
+  label.style.fontSize = '11px';
+  label.style.color = '#94a3b8';
+  label.style.marginRight = '2px';
+  nav.appendChild(label);
+
+  for (let i = 1; i <= count; i++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ghost pagenav-btn';
+    btn.textContent = 'Hal ' + i;
+    btn.onclick = () => {
+      const target = $('page-receipt-' + i);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    nav.appendChild(btn);
+  }
+}
+
 /** Scale whatever is already on the paper, instead of rendering it again. */
 function applyZoom() {
   const z = Number($('zoom').value);
-  const img = $('paperbox').querySelector('img');
-  if (img) { img.style.width = (Number(img.dataset.dots) * z * DOT_MM) + 'mm'; return; }
-  const svg = $('paperbox').querySelector('svg');
-  if (svg) svg.style.maxWidth = (Number(svg.dataset.dots) * z * DOT_MM) + 'mm';
+  for (const receipt of document.querySelectorAll('#paperbox .paper-receipt')) {
+    const dots = Number(receipt.dataset.dots || 384);
+    receipt.style.width = (dots * z * DOT_MM) + 'mm';
+  }
 }
 
 function itemRow(it = {}) {
@@ -452,20 +540,30 @@ async function readPdf(file) {
   const pdfjs = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4/build/pdf.min.mjs');
   pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4/build/pdf.worker.min.mjs';
   const doc = await pdfjs.getDocument({ data: buf }).promise;
-  const page = await doc.getPage(1);
-  const content = await page.getTextContent();
-  const vp = page.getViewport({ scale: 1 });
-  const boxes = content.items
-    .filter((it) => it.str && it.str.trim())
-    .map((it) => {
-      const t = it.transform;
-      return {
-        text: it.str, x: t[4], y: vp.height - t[5],
-        size: Math.abs(t[3]) || it.height, width: it.width, page: 1,
-      };
-    });
+  const numPages = doc.numPages || 1;
+  const pages = [];
+  for (let p = 1; p <= numPages; p++) {
+    say('Membaca halaman ' + p + '/' + numPages + '...');
+    const page = await doc.getPage(p);
+    const content = await page.getTextContent();
+    const vp = page.getViewport({ scale: 1 });
+    const boxes = content.items
+      .filter((it) => it.str && it.str.trim())
+      .map((it) => {
+        const t = it.transform;
+        return {
+          text: it.str,
+          x: t[4],
+          y: vp.height - t[5],
+          size: Math.abs(t[3]) || it.height,
+          width: it.width,
+          page: p,
+        };
+      });
+    pages.push({ boxes, page: p, width: vp.width, height: vp.height });
+  }
   clearSay();
-  return { boxes, width: vp.width, height: vp.height };
+  return { pages, boxes: pages[0]?.boxes || [], count: numPages };
 }
 
 /** Read a file as base64, in slices so a big PDF does not blow the stack. */
@@ -486,29 +584,39 @@ async function fileToBase64(file) {
  * a dot, which is exactly what a preview must not do.
  */
 async function renderInBrowser(file) {
-  const isPdf = /\\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+  const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const results = [];
 
   if (isPdf) {
-    say('Merender halaman PDF di browser...');
+    say('Membaca PDF di browser...');
     const buf = new Uint8Array(await file.arrayBuffer());
     const pdfjs = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4/build/pdf.min.mjs');
     pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4/build/pdf.worker.min.mjs';
     const doc = await pdfjs.getDocument({ data: buf }).promise;
-    const page = await doc.getPage(1);
-    // PDF user space is points, 72 to the inch, so a page is rendered at a
-    // requested dpi with scale = dpi / 72. Browsers also cap canvas sides
-    // around 32k pixels, so keep a ceiling on the result.
-    const unit = page.getViewport({ scale: 1 });
-    const longPt = Math.max(unit.width, unit.height);
-    const capped = Math.min(Number($('imp-dpi').value) / 72, MAX_EDGE / longPt);
-    const vp = page.getViewport({ scale: capped });
-    canvas.width = Math.ceil(vp.width);
-    canvas.height = Math.ceil(vp.height);
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    await page.render({ canvasContext: ctx, viewport: vp, background: '#ffffff' }).promise;
+    const numPages = doc.numPages || 1;
+
+    for (let p = 1; p <= numPages; p++) {
+      say('Merender halaman ' + p + '/' + numPages + ' di browser...');
+      const page = await doc.getPage(p);
+      const unit = page.getViewport({ scale: 1 });
+      const longPt = Math.max(unit.width, unit.height);
+      const capped = Math.min(Number($('imp-dpi').value) / 72, MAX_EDGE / longPt);
+      const vp = page.getViewport({ scale: capped });
+      canvas.width = Math.ceil(vp.width);
+      canvas.height = Math.ceil(vp.height);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport: vp, background: '#ffffff' }).promise;
+
+      const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const gray = new Uint8Array(canvas.width * canvas.height);
+      for (let i = 0, pt = 0; i < data.length; i += 4, pt++) {
+        gray[pt] = (data[i] * 77 + data[i + 1] * 150 + data[i + 2] * 29) >> 8;
+      }
+      results.push({ gray, width: canvas.width, height: canvas.height });
+    }
   } else {
     say('Membaca gambar...');
     const url = URL.createObjectURL(file);
@@ -524,14 +632,15 @@ async function renderInBrowser(file) {
     } finally {
       URL.revokeObjectURL(url);
     }
+    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const gray = new Uint8Array(canvas.width * canvas.height);
+    for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+      gray[p] = (data[i] * 77 + data[i + 1] * 150 + data[i + 2] * 29) >> 8;
+    }
+    results.push({ gray, width: canvas.width, height: canvas.height });
   }
 
-  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const gray = new Uint8Array(canvas.width * canvas.height);
-  for (let i = 0, p = 0; i < data.length; i += 4, p++) {
-    gray[p] = (data[i] * 77 + data[i + 1] * 150 + data[i + 2] * 29) >> 8;
-  }
-  return { gray, width: canvas.width, height: canvas.height };
+  return results;
 }
 
 async function grayToPngBase64(gray, width, height) {
@@ -585,10 +694,11 @@ async function postImport(doPrint) {
   let { res, data } = await send();
   if (res.ok || !body.file) return data;
 
-  // The server has no PDF rasteriser: render here and hand it a greyscale image.
-  const { gray, width, height } = await renderInBrowser(fileOf(body));
+  // The server has no PDF rasteriser: render here and hand it greyscale images.
+  const pages = await renderInBrowser(fileOf(body));
   body.file = null;
-  body.png = await grayToPngBase64(gray, width, height);
+  body.pages = await Promise.all(pages.map((p) => grayToPngBase64(p.gray, p.width, p.height)));
+  body.png = body.pages[0];
   ({ res, data } = await send());
   if (!res.ok) throw new Error(data.error || 'gagal memproses file');
   return data;
@@ -604,24 +714,61 @@ function fileOf(body) {
 function showImport(data) {
   const box = $('paperbox');
   box.innerHTML = '';
-  const img = document.createElement('img');
-  img.src = 'data:image/png;base64,' + data.png;
-  img.alt = 'Pratinjau label';
-  img.dataset.dots = data.dots;
-  img.style.imageRendering = 'pixelated';
-  box.appendChild(img);
+  const pages = data.pages && data.pages.length > 0 ? data.pages : [{ png: data.png, heightMM: data.heightMM, page: 1 }];
+  const z = Number($('zoom').value);
+  const targetDots = Number(data.dots || 384);
+  const targetWidthMM = targetDots * z * DOT_MM;
+
+  renderPageNav(pages.length);
+
+  for (let i = 0; i < pages.length; i++) {
+    const p = pages[i];
+    const receipt = document.createElement('div');
+    receipt.className = 'paper-receipt';
+    receipt.id = 'page-receipt-' + (i + 1);
+    receipt.dataset.dots = data.dots;
+    receipt.style.width = targetWidthMM + 'mm';
+
+    if (pages.length > 1) {
+      const header = document.createElement('div');
+      header.className = 'receipt-header';
+      const b = document.createElement('span');
+      b.className = 'badge';
+      b.textContent = 'HALAMAN ' + (i + 1) + '/' + pages.length;
+      const info = document.createElement('span');
+      info.textContent = (data.dots === 384 ? '58 mm' : '80 mm') + (p.heightMM ? ' · ' + p.heightMM + ' mm' : '');
+      header.append(b, info);
+      receipt.appendChild(header);
+    }
+
+    const img = document.createElement('img');
+    img.src = 'data:image/png;base64,' + p.png;
+    img.alt = 'Pratinjau label halaman ' + (i + 1);
+    img.dataset.dots = data.dots;
+    img.style.imageRendering = 'pixelated';
+    img.style.width = '100%';
+    receipt.appendChild(img);
+
+    const tear = document.createElement('div');
+    tear.className = 'receipt-tear';
+    tear.textContent = '✂ - - - - - - - - - - - - - - - - - - - - ✂';
+    receipt.appendChild(tear);
+
+    box.appendChild(receipt);
+  }
+
   $('notes').innerHTML = '';
   const how = data.source === 'browser'
     ? ' · dirender di browser (server tidak punya rasteriser PDF)'
     : '';
+  const pagesInfo = data.pageCount && data.pageCount > 1 ? data.pageCount + ' halaman · ' : '';
   $('meta').textContent =
-    (data.build ? data.build + ' · ' : '') +
-    data.dots + ' dots · ' + data.height + ' baris · ' +
+    pagesInfo +
+    data.dots + ' dots (' + (data.dots === 384 ? '58mm' : '80mm') + ') · ' +
     (data.heightMM ? data.heightMM + 'mm · ' : '') +
     (data.sourceWidth ? 'sumber ' + data.sourceWidth + '×' + data.sourceHeight + ' · ' : '') +
     (data.bottomMM ? '+' + data.bottomMM + 'mm bawah · ' : '') +
     (data.bytes ? data.bytes.toLocaleString() + ' bytes' : 'siap cetak') + how;
-  applyZoom();
 }
 
 async function importPreview() {
@@ -650,7 +797,8 @@ async function importPrint() {
   try {
     const data = await postImport(true);
     showImport(data);
-    say('Terkirim ' + data.printed.toLocaleString() + ' bytes (' + data.dots + ' dots × ' + data.height + '), sama persis dengan pratinjau', 'ok');
+    const pagesText = data.pageCount && data.pageCount > 1 ? ' (' + data.pageCount + ' halaman)' : '';
+    say('Terkirim ' + data.printed.toLocaleString() + ' bytes' + pagesText + ', berhasil dicetak!', 'ok');
   } catch (e) { fail(e); } finally { btn.disabled = false; }
 }
 
@@ -666,8 +814,8 @@ async function buildBody() {
   if (mode === 'pdf') {
     const file = $('pdf').files[0];
     if (!file) throw new Error('pilih file PDF dulu');
-    const { boxes } = await readPdf(file);
-    return { ...base, boxes };
+    const { pages } = await readPdf(file);
+    return { ...base, pages };
   }
   const text = $('rawtext').value.trim();
   if (!text) throw new Error('tempel teks label dulu');
@@ -687,12 +835,59 @@ async function preview() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'render gagal');
     if (mine !== seq) return;
-    $('paperbox').innerHTML = data.svg;
-    const svg = $('paperbox').querySelector('svg');
-    if (svg) svg.dataset.dots = data.dots;
+
+    const box = $('paperbox');
+    box.innerHTML = '';
+    const pages = Array.isArray(data.pages) && data.pages.length > 0
+      ? data.pages
+      : [{ svg: data.svg, tracking: data.label && data.label.trackingNumber, page: 1 }];
+
+    const z = Number($('zoom').value);
+    const targetDots = Number(data.dots || 384);
+    const targetWidthMM = targetDots * z * DOT_MM;
+
+    renderPageNav(pages.length);
+
+    for (let i = 0; i < pages.length; i++) {
+      const p = pages[i];
+      const receipt = document.createElement('div');
+      receipt.className = 'paper-receipt';
+      receipt.id = 'page-receipt-' + (i + 1);
+      receipt.dataset.dots = data.dots;
+      receipt.style.width = targetWidthMM + 'mm';
+
+      if (pages.length > 1) {
+        const header = document.createElement('div');
+        header.className = 'receipt-header';
+        const b = document.createElement('span');
+        b.className = 'badge';
+        b.textContent = 'HALAMAN ' + (i + 1) + '/' + pages.length;
+        const info = document.createElement('span');
+        info.textContent = (data.dots === 384 ? '58 mm' : '80 mm') + (p.tracking ? ' · ' + p.tracking : '');
+        header.append(b, info);
+        receipt.appendChild(header);
+      }
+
+      const wrap = document.createElement('div');
+      wrap.innerHTML = p.svg;
+      const svg = wrap.querySelector('svg');
+      if (svg) {
+        svg.dataset.dots = data.dots;
+        svg.style.width = '100%';
+        receipt.appendChild(svg);
+      }
+
+      const tear = document.createElement('div');
+      tear.className = 'receipt-tear';
+      tear.textContent = '✂ - - - - - - - - - - - - - - - - - - - - ✂';
+      receipt.appendChild(tear);
+
+      box.appendChild(receipt);
+    }
+
     $('notes').innerHTML = data.notes.map((n) => '<li>' + esc(n) + '</li>').join('');
-    $('meta').textContent = data.paper + 'mm · ' + data.dots + ' dots · ' + data.bytes.toLocaleString() + ' bytes';
-    applyZoom();
+    const pagesInfo = data.pageCount && data.pageCount > 1 ? data.pageCount + ' halaman · ' : '';
+    $('meta').textContent = pagesInfo + data.paper + 'mm · ' + data.dots + ' dots · ' + data.bytes.toLocaleString() + ' bytes';
     clearSay();
   } catch (e) {
     if (mine === seq) fail(e);
@@ -712,7 +907,8 @@ async function doPrint() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'gagal mencetak');
-    say('Terkirim: ' + data.bytes.toLocaleString() + ' bytes ke ' + data.device + (data.tracking ? ' (' + data.tracking + ')' : ''), 'ok');
+    const pagesText = data.pageCount && data.pageCount > 1 ? ' (' + data.pageCount + ' halaman)' : '';
+    say('Terkirim: ' + data.bytes.toLocaleString() + ' bytes ke ' + data.device + pagesText + (data.tracking ? ' [' + data.tracking + ']' : ''), 'ok');
   } catch (e) {
     fail(e);
   } finally {
@@ -756,6 +952,7 @@ async function loadPrinters() {
     sel.appendChild(o);
   }
   if (data.default) sel.value = data.default;
+  if (data.paper) $('paper').value = String(data.paper);
   $('print').disabled = !sel.value;
 }
 

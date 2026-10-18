@@ -9,6 +9,7 @@ import { buildPlan } from '../render/plan.mjs';
 import { planNotes, planToAscii } from '../render/planascii.mjs';
 import { planHeight, planToEscPos } from '../render/planescpos.mjs';
 import { PrinterConnection } from '../ble/connect.mjs';
+import { sleep } from '../ble/scan.mjs';
 import { loadProfile, loadConfig, saveConfig } from '../config.mjs';
 import { c, confirm } from './shared.mjs';
 
@@ -42,39 +43,47 @@ export async function runPrint(opts) {
   const labels = await gatherLabels(opts);
   if (!labels.length) throw new Error('Nothing to print');
 
-  for (const label of labels) {
-    report(label, opts);
-    const { bytes, cols, paper } = render(label, opts);
+  const paper = PAPER[opts.paper ?? 58] ?? { name: `${opts.paper ?? 58}mm` };
 
-    if (opts.dryRun) {
+  if (opts.dryRun) {
+    for (const label of labels) {
+      report(label, opts);
       const r = render(label, opts);
       process.stdout.write(`\n${planToAscii(r.plan, { dots: r.dots, cols: opts.asciiCols ?? 64 })}\n`);
-      process.stdout.write(`${c.dim(`${bytes.length} bytes, ${paper.name} / ${cols} cols`)}\n`);
+      process.stdout.write(`${c.dim(`${r.bytes.length} bytes, ${paper.name} / ${r.cols} cols`)}\n`);
       process.stdout.write(`${c.yellow('dry run: nothing sent')}\n`);
-      continue;
     }
+    return;
+  }
 
-    const target = await resolveDevice(opts);
-    if (!target) throw new Error('No printer selected. Pass --device <mac|id> or run: resi probe --device <id> --save <name>');
+  const target = await resolveDevice(opts);
+  if (!target) throw new Error('No printer selected. Pass --device <mac|id> or run: resi probe --device <id> --save <name>');
 
-    if (!opts.yes && labels.length === 1 && !process.stdin.isTTY) {
-      throw new Error('Refusing to print without --yes when stdin is not a terminal');
+  if (!opts.yes && !process.stdin.isTTY) {
+    throw new Error('Refusing to print without --yes when stdin is not a terminal');
+  }
+  if (!opts.yes && process.stdin.isTTY) {
+    const promptMsg = labels.length > 1
+      ? `Print all ${labels.length} labels (${paper.name}) to ${target.name ?? target.id}?`
+      : `Print this ${paper.name} label to ${target.name ?? target.id}?`;
+    const { ok } = await confirm(promptMsg);
+    if (!ok) {
+      process.stdout.write('cancelled\n');
+      return;
     }
-    if (!opts.yes && process.stdin.isTTY) {
-      const { ok } = await confirm(`Print this ${paper.name} label to ${target.name ?? target.id}?`);
-      if (!ok) {
-        process.stdout.write('cancelled\n');
-        return;
-      }
-    }
+  }
 
-    process.stdout.write(`\n${c.dim(`connecting to ${target.id}...`)}`);
-    const conn = await PrinterConnection.connect(target.id, { timeout: opts.timeout ?? 15000 });
-    conn.chunkSize = opts.chunkSize ?? 180;
-    conn.chunkDelayMs = opts.chunkDelayMs ?? 18;
-    process.stdout.write(`\r${c.green('connected')} ${c.dim(target.id)}            \n`);
+  process.stdout.write(`\n${c.dim(`connecting to ${target.id}...`)}`);
+  const conn = await PrinterConnection.connect(target.id, { timeout: opts.timeout ?? 15000 });
+  conn.chunkSize = opts.chunkSize ?? 180;
+  conn.chunkDelayMs = opts.chunkDelayMs ?? 18;
+  process.stdout.write(`\r${c.green('connected')} ${c.dim(target.id)}            \n`);
 
-    try {
+  try {
+    for (let i = 0; i < labels.length; i++) {
+      const label = labels[i];
+      report(label, opts);
+      const { bytes } = render(label, opts);
       let lastPct = -1;
       const sent = await conn.write(bytes, {
         target: target.writeUuid,
@@ -82,14 +91,18 @@ export async function runPrint(opts) {
           const pct = Math.floor((done / total) * 100);
           if (pct >= lastPct + 10) {
             lastPct = pct;
-            process.stdout.write(`\r  sending ${String(pct).padStart(3)}%   `);
+            process.stdout.write(`\r  sending [${i + 1}/${labels.length}] ${String(pct).padStart(3)}%   `);
           }
         },
       });
-      process.stdout.write(`\r${c.green(`sent ${sent} bytes`)}          \n`);
-    } finally {
-      await conn.disconnect();
+      process.stdout.write(`\r${c.green(`sent ${sent} bytes`)} [${i + 1}/${labels.length}]          \n`);
+      if (i < labels.length - 1) {
+        await sleep(800);
+      }
     }
+    await sleep(1500);
+  } finally {
+    await conn.disconnect();
   }
 }
 

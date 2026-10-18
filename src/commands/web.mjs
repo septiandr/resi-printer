@@ -8,10 +8,10 @@ import { PAPER } from '../render/layout.mjs';
 import { parseTextLabel, parseObjectLabel, parseBoxes } from '../label/parse.mjs';
 import { validate } from '../label/model.mjs';
 import { loadConfig, listProfiles, loadProfile } from '../config.mjs';
-import { scan } from '../ble/scan.mjs';
+import { scan, sleep } from '../ble/scan.mjs';
 import { PrinterConnection } from '../ble/connect.mjs';
 import { decodePng, encodePng } from '../render/png.mjs';
-import { imageToGray, NoRasteriser } from '../render/rasterize.mjs';
+import { imageToGray, imagesToGray, NoRasteriser } from '../render/rasterize.mjs';
 import { prepareBitmap, bitmapToEscPos, bitmapToGray, appendBlankRows, appendCutLine } from '../render/raster.mjs';
 import { HTML } from './webui.mjs';
 import { c } from './shared.mjs';
@@ -72,33 +72,69 @@ function render(body) {
   const barcodeLayout = ['auto', 'across', 'stack'].includes(body.barcodeLayout)
     ? body.barcodeLayout
     : 'auto';
+  const cutLine = body.cutLine !== false;
+  const codePage = Number(body.codePage) || 0;
+  const cut = body.cut === 'none' ? null : body.cut || 'partial';
 
-  let label;
-  if (body.label && typeof body.label === 'object') {
-    label = parseObjectLabel(body.label, 'web');
+  let labels = [];
+  if (Array.isArray(body.pages) && body.pages.length > 0) {
+    labels = body.pages.map((p, i) => {
+      const boxes = Array.isArray(p.boxes) ? p.boxes : [];
+      return parseBoxes(boxes, { source: `web-pdf#${i + 1}` });
+    });
+  } else if (Array.isArray(body.labels) && body.labels.length > 0) {
+    labels = body.labels.map((l, i) => parseObjectLabel(l, `web#${i + 1}`));
+  } else if (body.label && typeof body.label === 'object') {
+    labels = [parseObjectLabel(body.label, 'web')];
   } else if (Array.isArray(body.boxes) && body.boxes.length) {
-    // Text run out of a PDF in the browser, using the same box schema the
-    // Node-side PDF reader produces.
-    label = parseBoxes(body.boxes, { source: 'web-pdf' });
+    labels = [parseBoxes(body.boxes, { source: 'web-pdf' })];
   } else if (typeof body.text === 'string' && body.text.trim()) {
-    label = parseTextLabel(body.text);
+    labels = [parseTextLabel(body.text)];
   } else {
     throw new Error('belum ada isi: tempel teks, unggah PDF, atau isi form');
   }
 
-  const { ok, errors } = validate(label);
-  if (!ok) throw new Error(errors.join('; '));
+  const pageResults = [];
+  const byteList = [];
+  const svgs = [];
+  const allNotes = [];
 
-  const cutLine = body.cutLine !== false;
-  const plan = buildPlan(label, { paper, barcodeLayout, cutLine });
+  for (let i = 0; i < labels.length; i++) {
+    const label = labels[i];
+    const { ok, errors } = validate(label);
+    if (!ok) throw new Error(labels.length > 1 ? `Halaman ${i + 1}: ${errors.join('; ')}` : errors.join('; '));
+
+    const plan = buildPlan(label, { paper, barcodeLayout, cutLine });
+    const pageNotes = plan.filter((p) => p.type === 'note').map((p) => p.note);
+    const svg = planToSvg(plan, { dots, paper, title: label.trackingNumber });
+    const bytes = planToEscPos(plan, { dots, codePage, cut });
+
+    allNotes.push(...pageNotes);
+    svgs.push(svg);
+    byteList.push(bytes);
+    pageResults.push({
+      page: i + 1,
+      label,
+      notes: pageNotes,
+      svg,
+      bytesLength: bytes.length,
+    });
+  }
+
+  const allBytes = Buffer.concat(byteList);
   return {
     paper,
     dots,
     barcodeLayout,
-    label,
-    notes: plan.filter((p) => p.type === 'note').map((p) => p.note),
-    svg: planToSvg(plan, { dots, paper, title: label.trackingNumber }),
-    bytes: planToEscPos(plan, { dots, codePage: Number(body.codePage) || 0, cut: body.cut === 'none' ? null : body.cut || 'partial' }),
+    label: labels[0],
+    labels,
+    pages: pageResults,
+    pageCount: labels.length,
+    notes: allNotes,
+    svg: svgs.join('\n'),
+    svgs,
+    bytes: allBytes,
+    byteList,
   };
 }
 
@@ -125,10 +161,11 @@ async function handle(req, res) {
   }
 
   if (req.method === 'GET' && path === '/api/printers') {
-    return json(res, 200, { ...(await printerList()), papers: Object.entries(PAPER) });
+    const config = await loadConfig();
+    return json(res, 200, { ...(await printerList()), paper: config.paper || 58, papers: Object.entries(PAPER) });
   }
 
-  if (req.method === 'POST' && path === '/api/scan') {
+  if ((req.method === 'GET' || req.method === 'POST') && path === '/api/scan') {
     const timeout = Number(url.searchParams.get('timeout')) || 8000;
     const devices = await scan({ timeout });
     return json(res, 200, { devices });
@@ -139,6 +176,15 @@ async function handle(req, res) {
     const out = render(body);
     return json(res, 200, {
       svg: out.svg,
+      svgs: out.svgs,
+      pageCount: out.pageCount,
+      pages: out.pages.map((p) => ({
+        page: p.page,
+        svg: p.svg,
+        tracking: p.label.trackingNumber,
+        receiver: p.label.receiver?.name || '',
+        notes: p.notes,
+      })),
       notes: out.notes,
       paper: out.paper,
       dots: out.dots,
@@ -157,12 +203,22 @@ async function handle(req, res) {
     const conn = await PrinterConnection.connect(id, { timeout: Number(body.timeout) || 15000 });
     try {
       const target = body.writeUuid || config.writeUuid;
-      const sent = await conn.write(out.bytes, target ? { target } : {});
+      let sent = 0;
+      const pagesToPrint = out.byteList && out.byteList.length > 0 ? out.byteList : [out.bytes];
+      for (let p = 0; p < pagesToPrint.length; p++) {
+        sent += await conn.write(pagesToPrint[p], target ? { target } : {});
+        if (p < pagesToPrint.length - 1) {
+          await sleep(800);
+        }
+      }
+      await sleep(1500);
+      const trackings = out.labels ? out.labels.map((l) => l.trackingNumber).filter(Boolean).join(', ') : out.label.trackingNumber;
       return json(res, 200, {
         ok: true,
         device: conn.name || id,
         bytes: sent,
-        tracking: out.label.trackingNumber,
+        pageCount: out.pageCount,
+        tracking: trackings,
         notes: out.notes,
       });
     } finally {
@@ -179,25 +235,36 @@ async function handle(req, res) {
     // `resi import` does, so the preview and the print come from one renderer.
     // A browser-rasterised image is only the fallback for machines with no PDF
     // rasteriser of their own.
-    let gray;
+    let grays;
     let source = 'server';
     if (body.file) {
       try {
-        gray = await imageToGray({
+        grays = await imagesToGray({
           bytes: Buffer.from(body.file, 'base64'),
           name: body.name || 'upload.pdf',
           dpi: Number(body.dpi) || 450,
         });
       } catch (err) {
-        if (!(err instanceof NoRasteriser) || !body.png) {
+        if (!(err instanceof NoRasteriser) || (!body.png && !body.pages)) {
           throw new Error(err instanceof NoRasteriser ? err.message : `file tidak bisa dibaca: ${err.message}`);
         }
-        gray = decodePng(Buffer.from(body.png, 'base64'));
+        if (Array.isArray(body.pages) && body.pages.length > 0) {
+          grays = body.pages.map((p) => decodePng(Buffer.from(p, 'base64')));
+        } else {
+          grays = [decodePng(Buffer.from(body.png, 'base64'))];
+        }
         source = 'browser';
       }
+    } else if (Array.isArray(body.pages) && body.pages.length > 0) {
+      try {
+        grays = body.pages.map((p) => decodePng(Buffer.from(p, 'base64')));
+      } catch (err) {
+        throw new Error(`gambar tidak bisa dibaca: ${err.message}`);
+      }
+      source = 'browser';
     } else if (body.png) {
       try {
-        gray = decodePng(Buffer.from(body.png, 'base64'));
+        grays = [decodePng(Buffer.from(body.png, 'base64'))];
       } catch (err) {
         throw new Error(`gambar tidak bisa dibaca: ${err.message}`);
       }
@@ -230,6 +297,7 @@ async function handle(req, res) {
         JSON.stringify({
           file: body.file ? String(body.file).length : 0,
           png: body.png ? String(body.png).length : 0,
+          pages: grays.length,
           name: body.name,
           dpi: body.dpi,
           ...options,
@@ -242,31 +310,53 @@ async function handle(req, res) {
 
     let job = jobs.get(key);
     if (!job) {
-      const prepared = options.trim
-        ? prepareBitmap(gray, options)
-        : prepareBitmap(gray, { ...options, trim: false });
-      // The blank paper below the label is part of what gets printed, so the
-      // preview has to carry it too or the two would not be the same label.
-      // When cutLine is active, the cut line sits after the chosen margin,
-      // followed by a 10 mm (80 dot) bottom margin after the cut line.
+      const pageList = [];
+      const byteList = [];
+      let totalHeight = 0;
+      let totalHeightMM = 0;
       const cutTailDots = Math.round(10 * 8);
-      const printable = cutLine
-        ? appendCutLine(prepared, { gap: feed, tail: cutTailDots })
-        : appendBlankRows(prepared, feed);
-      const bytes = bitmapToEscPos(printable, {
-        cut: body.cut === 'none' ? null : body.cut || 'partial',
-        feed: cutLine ? 0 : 40,
-      });
+
+      for (let i = 0; i < grays.length; i++) {
+        const gray = grays[i];
+        const prepared = options.trim
+          ? prepareBitmap(gray, options)
+          : prepareBitmap(gray, { ...options, trim: false });
+        const printable = cutLine
+          ? appendCutLine(prepared, { gap: feed, tail: cutTailDots })
+          : appendBlankRows(prepared, feed);
+        const pageBytes = bitmapToEscPos(printable, {
+          cut: body.cut === 'none' ? null : body.cut || 'partial',
+          feed: cutLine ? 0 : 40,
+        });
+        const pagePng = encodePng(bitmapToGray(printable)).toString('base64');
+        byteList.push(pageBytes);
+        totalHeight += printable.height;
+        totalHeightMM += printable.heightMM;
+        pageList.push({
+          page: i + 1,
+          png: pagePng,
+          width: printable.width,
+          height: printable.height,
+          heightMM: printable.heightMM,
+          artHeight: prepared.height,
+        });
+      }
+
+      const allBytes = Buffer.concat(byteList);
       job = {
-        bytes,
-        png: encodePng(bitmapToGray(printable)).toString('base64'),
+        bytes: allBytes,
+        byteList,
+        png: pageList[0].png,
+        pages: pageList,
+        pageCount: pageList.length,
         source,
-        sourceWidth: gray.width,
-        sourceHeight: gray.height,
+        sourceWidth: grays[0].width,
+        sourceHeight: grays[0].height,
+        paper,
         dots,
-        height: printable.height,
-        heightMM: printable.heightMM,
-        artHeight: prepared.height,
+        height: totalHeight,
+        heightMM: totalHeightMM,
+        artHeight: pageList[0].artHeight,
         bottomMM,
       };
       if (jobs.size >= 8) jobs.delete(jobs.keys().next().value);
@@ -280,7 +370,15 @@ async function handle(req, res) {
       const conn = await PrinterConnection.connect(id, { timeout: Number(body.timeout) || 15000 });
       try {
         const target = body.writeUuid || config.writeUuid;
-        const sent = await conn.write(job.bytes, target ? { target } : {});
+        let sent = 0;
+        const pagesToPrint = job.byteList && job.byteList.length > 0 ? job.byteList : [job.bytes];
+        for (let p = 0; p < pagesToPrint.length; p++) {
+          sent += await conn.write(pagesToPrint[p], target ? { target } : {});
+          if (p < pagesToPrint.length - 1) {
+            await sleep(800);
+          }
+        }
+        await sleep(1500);
         return json(res, 200, { ok: true, printed: sent, ...job, bytes: job.bytes.length });
       } finally {
         await conn.disconnect();
