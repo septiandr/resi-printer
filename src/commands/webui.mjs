@@ -361,7 +361,7 @@ export function HTML() {
     <div class="row">
       <div class="field">
         <label for="paper">Lebar kertas</label>
-        <select id="paper"><option value="58" selected>58 mm (RPP02N / standar)</option><option value="80">80 mm</option></select>
+        <select id="paper"><option value="58">58 mm (RPP02N)</option><option value="80" selected>80 mm (standar)</option></select>
       </div>
       <div class="field">
         <label for="bclayout">Tata letak barcode</label>
@@ -489,7 +489,7 @@ function renderPageNav(count) {
 function applyZoom() {
   const z = Number($('zoom').value);
   for (const receipt of document.querySelectorAll('#paperbox .paper-receipt')) {
-    const dots = Number(receipt.dataset.dots || 384);
+    const dots = Number(receipt.dataset.dots || 576);
     receipt.style.width = (dots * z * DOT_MM) + 'mm';
   }
 }
@@ -716,7 +716,7 @@ function showImport(data) {
   box.innerHTML = '';
   const pages = data.pages && data.pages.length > 0 ? data.pages : [{ png: data.png, heightMM: data.heightMM, page: 1 }];
   const z = Number($('zoom').value);
-  const targetDots = Number(data.dots || 384);
+  const targetDots = Number(data.dots || 576);
   const targetWidthMM = targetDots * z * DOT_MM;
 
   renderPageNav(pages.length);
@@ -843,7 +843,7 @@ async function preview() {
       : [{ svg: data.svg, tracking: data.label && data.label.trackingNumber, page: 1 }];
 
     const z = Number($('zoom').value);
-    const targetDots = Number(data.dots || 384);
+    const targetDots = Number(data.dots || 576);
     const targetWidthMM = targetDots * z * DOT_MM;
 
     renderPageNav(pages.length);

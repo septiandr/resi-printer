@@ -162,7 +162,7 @@ async function handle(req, res) {
 
   if (req.method === 'GET' && path === '/api/printers') {
     const config = await loadConfig();
-    return json(res, 200, { ...(await printerList()), paper: config.paper || 58, papers: Object.entries(PAPER) });
+    return json(res, 200, { ...(await printerList()), paper: config.paper || 80, papers: Object.entries(PAPER) });
   }
 
   if ((req.method === 'GET' || req.method === 'POST') && path === '/api/scan') {

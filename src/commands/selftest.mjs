@@ -73,7 +73,7 @@ export function buildSelfTest({ paper = 80, tracking = 'SPXID065670267489' } = {
 
 export async function runSelfTest(opts) {
   const target = await resolveTarget(opts);
-  const bytes = buildSelfTest({ paper: opts.paper ?? 58, tracking: opts.tracking ?? 'SPXID065670267489' });
+  const bytes = buildSelfTest({ paper: opts.paper ?? 80, tracking: opts.tracking ?? 'SPXID065670267489' });
   process.stdout.write(`self test: ${bytes.length} bytes -> ${target.id}\n`);
 
   if (opts.dryRun) {

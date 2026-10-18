@@ -50,7 +50,7 @@ export async function runImport(opts = {}, positional = []) {
   }
   if (!existsSync(file)) throw new Error(`no such file: ${file}`);
 
-  const paper = Number(opts.paper) === 58 ? 58 : 80;
+  const paper = Number(opts.paper || config.paper) === 58 ? 58 : 80;
   const dots = PAPER[paper].dots;
   const dpi = Number(opts.dpi) || 450;
   const margin = opts.margin === undefined ? 3 : Number(opts.margin);

@@ -5,7 +5,7 @@ import EscPosBuilder, { ESC, GS } from '../escpos/builder.mjs';
  * on, one numbered band per feature, so a single print tells us exactly which
  * commands this printer honours.
  */
-export function buildFeatureProbe({ dots = 384 } = {}) {
+export function buildFeatureProbe({ dots = 576 } = {}) {
   const b = new EscPosBuilder();
   b.init();
   b.lineSpacing(24);
@@ -102,7 +102,7 @@ export function buildFeatureProbe({ dots = 384 } = {}) {
 }
 
 export async function runFeatureProbe(opts) {
-  const bytes = buildFeatureProbe({ dots: opts.paper === 80 ? 576 : 384 });
+  const bytes = buildFeatureProbe({ dots: opts.paper === 58 ? 384 : 576 });
   process.stdout.write(`feature probe: ${bytes.length} bytes\n`);
   if (opts.dryRun) return;
 
