@@ -107,7 +107,8 @@ function render(body) {
     const plan = buildPlan(label, { paper, barcodeLayout, cutLine });
     const pageNotes = plan.filter((p) => p.type === 'note').map((p) => p.note);
     const svg = planToSvg(plan, { dots, paper, title: label.trackingNumber });
-    const bytes = planToEscPos(plan, { dots, codePage, cut });
+    const isLast = i === labels.length - 1;
+    const bytes = planToEscPos(plan, { dots, codePage, cut: isLast ? cut : 'none' });
 
     allNotes.push(...pageNotes);
     svgs.push(svg);
@@ -317,16 +318,19 @@ async function handle(req, res) {
       const cutTailDots = Math.round(10 * 8);
 
       for (let i = 0; i < grays.length; i++) {
+        const isLast = i === grays.length - 1;
+        const tailDots = isLast ? cutTailDots : Math.round(1 * 8); // 8 dots (~1mm) between pages
         const gray = grays[i];
         const prepared = options.trim
           ? prepareBitmap(gray, options)
           : prepareBitmap(gray, { ...options, trim: false });
         const printable = cutLine
-          ? appendCutLine(prepared, { gap: feed, tail: cutTailDots })
-          : appendBlankRows(prepared, feed);
+          ? appendCutLine(prepared, { gap: feed, tail: tailDots })
+          : appendBlankRows(prepared, isLast ? feed : Math.round(1 * 8));
         const pageBytes = bitmapToEscPos(printable, {
-          cut: body.cut === 'none' ? null : body.cut || 'partial',
-          feed: cutLine ? 0 : 40,
+          cut: isLast ? (body.cut === 'none' ? null : body.cut || 'partial') : null,
+          feed: cutLine ? 0 : (isLast ? 40 : 0),
+          lead: 0,
         });
         const pagePng = encodePng(bitmapToGray(printable)).toString('base64');
         byteList.push(pageBytes);

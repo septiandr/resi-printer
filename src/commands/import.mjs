@@ -85,15 +85,19 @@ export async function runImport(opts = {}, positional = []) {
       bitmap = { ...bitmap, width: Math.max(8, Math.round(bitmap.width * pct)), data: bitmap.data };
     }
 
+    const isLast = i === grays.length - 1;
+    const tailDots = isLast ? cutTailDots : Math.round(1 * 8);
+
     if (opts.cutLine !== false) {
-      bitmap = appendCutLine(bitmap, { gap: feed, tail: cutTailDots });
+      bitmap = appendCutLine(bitmap, { gap: feed, tail: tailDots });
     } else if (feed > 0) {
-      bitmap = appendBlankRows(bitmap, feed);
+      bitmap = appendBlankRows(bitmap, isLast ? feed : Math.round(1 * 8));
     }
 
     const pageBytes = bitmapToEscPos(bitmap, {
-      cut: opts.cut === 'none' ? null : opts.cut || 'partial',
-      feed: opts.cutLine !== false ? 0 : 40,
+      cut: isLast ? (opts.cut === 'none' ? null : opts.cut || 'partial') : null,
+      feed: opts.cutLine !== false ? 0 : (isLast ? 40 : 0),
+      lead: 0,
     });
     payloads.push(pageBytes);
 

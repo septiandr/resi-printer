@@ -132,33 +132,34 @@ export function HTML() {
   .pagenav-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
   .paper-feed {
-    display: flex; flex-direction: column; align-items: center; gap: 32px; width: 100%;
+    display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%;
   }
   .paper-receipt {
     position: relative; background: #ffffff; color: #000000;
-    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.45), 0 2px 5px rgba(0, 0, 0, 0.2);
-    border-radius: 4px 4px 0 0; padding: 14px 12px; display: flex;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+    border-radius: 2px; padding: 0; display: flex;
     flex-direction: column; align-items: center; box-sizing: border-box;
+    overflow: hidden;
     transition: width 0.15s ease;
   }
-  .receipt-header {
-    width: 100%; display: flex; justify-content: space-between; align-items: center;
-    padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px dashed #cbd5e1;
-    font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #64748b; font-weight: 600;
-  }
-  .receipt-header .badge {
-    background: #e2e8f0; color: #1e293b; padding: 2px 7px; border-radius: 4px; font-size: 10px;
+  .receipt-badge {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(15, 23, 42, 0.75); color: #f8fafc;
+    backdrop-filter: blur(4px); padding: 2px 7px; border-radius: 4px;
+    font-size: 10px; font-family: ui-monospace, Menlo, monospace;
+    font-weight: 600; letter-spacing: 0.5px; z-index: 2; pointer-events: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   }
   .paper-receipt img {
-    display: block; image-rendering: pixelated; height: auto; max-width: 100%;
+    display: block; image-rendering: pixelated; height: auto; width: 100%;
   }
   .paper-receipt svg {
-    display: block; max-width: 100%; height: auto;
+    display: block; width: 100%; height: auto;
   }
   .receipt-tear {
     width: 100%; display: flex; align-items: center; justify-content: center;
     color: #94a3b8; font-size: 11px; font-family: ui-monospace, monospace;
-    padding-top: 10px; margin-top: 6px; border-top: 1px dashed #cbd5e1; user-select: none;
+    padding: 8px 0; background: #ffffff; border-top: 1px dashed #cbd5e1; user-select: none;
   }
   .label-svg { width: 100%; max-width: 420px; height: auto; display: block; }
   .label-svg * { vector-effect: non-scaling-stroke; }
@@ -730,15 +731,10 @@ function showImport(data) {
     receipt.style.width = targetWidthMM + 'mm';
 
     if (pages.length > 1) {
-      const header = document.createElement('div');
-      header.className = 'receipt-header';
       const b = document.createElement('span');
-      b.className = 'badge';
-      b.textContent = 'HALAMAN ' + (i + 1) + '/' + pages.length;
-      const info = document.createElement('span');
-      info.textContent = (data.dots === 384 ? '58 mm' : '80 mm') + (p.heightMM ? ' · ' + p.heightMM + ' mm' : '');
-      header.append(b, info);
-      receipt.appendChild(header);
+      b.className = 'receipt-badge';
+      b.textContent = 'Hal ' + (i + 1) + '/' + pages.length;
+      receipt.appendChild(b);
     }
 
     const img = document.createElement('img');
@@ -749,10 +745,12 @@ function showImport(data) {
     img.style.width = '100%';
     receipt.appendChild(img);
 
-    const tear = document.createElement('div');
-    tear.className = 'receipt-tear';
-    tear.textContent = '✂ - - - - - - - - - - - - - - - - - - - - ✂';
-    receipt.appendChild(tear);
+    if (i === pages.length - 1) {
+      const tear = document.createElement('div');
+      tear.className = 'receipt-tear';
+      tear.textContent = '✂ - - - - - - - - - - - - - - - - - - - - ✂';
+      receipt.appendChild(tear);
+    }
 
     box.appendChild(receipt);
   }
@@ -857,15 +855,10 @@ async function preview() {
       receipt.style.width = targetWidthMM + 'mm';
 
       if (pages.length > 1) {
-        const header = document.createElement('div');
-        header.className = 'receipt-header';
         const b = document.createElement('span');
-        b.className = 'badge';
-        b.textContent = 'HALAMAN ' + (i + 1) + '/' + pages.length;
-        const info = document.createElement('span');
-        info.textContent = (data.dots === 384 ? '58 mm' : '80 mm') + (p.tracking ? ' · ' + p.tracking : '');
-        header.append(b, info);
-        receipt.appendChild(header);
+        b.className = 'receipt-badge';
+        b.textContent = 'Hal ' + (i + 1) + '/' + pages.length;
+        receipt.appendChild(b);
       }
 
       const wrap = document.createElement('div');
@@ -877,10 +870,12 @@ async function preview() {
         receipt.appendChild(svg);
       }
 
-      const tear = document.createElement('div');
-      tear.className = 'receipt-tear';
-      tear.textContent = '✂ - - - - - - - - - - - - - - - - - - - - ✂';
-      receipt.appendChild(tear);
+      if (i === pages.length - 1) {
+        const tear = document.createElement('div');
+        tear.className = 'receipt-tear';
+        tear.textContent = '✂ - - - - - - - - - - - - - - - - - - - - ✂';
+        receipt.appendChild(tear);
+      }
 
       box.appendChild(receipt);
     }

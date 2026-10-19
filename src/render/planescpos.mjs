@@ -82,7 +82,9 @@ export function planToEscPos(plan, { dots, codePage = 0, cut = 'partial' } = {})
   }
 
   b.resetStyle();
-  b.cut(cut === 'none' ? 'partial' : cut, feed);
+  if (cut && cut !== 'none') {
+    b.cut(cut, feed);
+  }
   return b.build();
 }
 

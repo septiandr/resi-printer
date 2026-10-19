@@ -91,7 +91,8 @@ export class EscPosBuilder {
 
   /** ESC J n - print and feed n dots. */
   feedDots(n = 0) {
-    return this.raw([ESC, 0x4a, Math.max(0, Math.min(255, n))]);
+    if (n <= 0) return this;
+    return this.raw([ESC, 0x4a, Math.min(255, n)]);
   }
 
   /** GS L n - set left margin in printer units. */
