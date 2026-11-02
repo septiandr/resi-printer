@@ -315,18 +315,21 @@ async function handle(req, res) {
       const byteList = [];
       let totalHeight = 0;
       let totalHeightMM = 0;
-      const cutTailDots = Math.round(10 * 8);
 
       for (let i = 0; i < grays.length; i++) {
         const isLast = i === grays.length - 1;
-        const tailDots = isLast ? cutTailDots : Math.round(1 * 8); // 8 dots (~1mm) between pages
+        // Margin bottom is only applied to the last page.
+        // Between pages, the dashed boundary has 5mm top and bottom margin.
+        // The last page has feed (bottom margin) before the cut line and 5mm spare after it.
+        const gap = isLast ? feed : Math.round(5 * 8);
+        const tailDots = Math.round(5 * 8);
         const gray = grays[i];
         const prepared = options.trim
           ? prepareBitmap(gray, options)
           : prepareBitmap(gray, { ...options, trim: false });
         const printable = cutLine
-          ? appendCutLine(prepared, { gap: feed, tail: tailDots })
-          : appendBlankRows(prepared, isLast ? feed : Math.round(1 * 8));
+          ? appendCutLine(prepared, { gap, tail: tailDots })
+          : appendBlankRows(prepared, isLast ? feed : Math.round(5 * 8));
         const pageBytes = bitmapToEscPos(printable, {
           cut: isLast ? (body.cut === 'none' ? null : body.cut || 'partial') : null,
           feed: cutLine ? 0 : (isLast ? 40 : 0),

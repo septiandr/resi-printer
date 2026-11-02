@@ -306,7 +306,7 @@ export function HTML() {
               </select>
             </div>
           </div>
-          <p class="hint">Margin bawah memberi ruang kosong sebelum garis potong. Setelah garis potong terdapat jarak margin bawah 10 mm.</p>
+          <p class="hint">Margin bawah hanya diterapkan di page terakhir (sebelum garis potong). Pembatas tiap page berjarak margin atas-bawah 5 mm, dan setelah garis potong akhir terdapat spare 5 mm.</p>
           <div class="field check">
             <input type="checkbox" id="imp-dither"><label for="imp-dither">Dither (untuk gambar abu-abu)</label>
           </div>

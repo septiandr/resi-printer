@@ -65,7 +65,6 @@ export async function runImport(opts = {}, positional = []) {
     `${c.dim('pages')} ${grays.length} page(s) found\n`
   );
 
-  const cutTailDots = Math.round(10 * 8);
   const payloads = [];
 
   for (let i = 0; i < grays.length; i++) {
@@ -86,12 +85,16 @@ export async function runImport(opts = {}, positional = []) {
     }
 
     const isLast = i === grays.length - 1;
-    const tailDots = isLast ? cutTailDots : Math.round(1 * 8);
+    // Margin bottom is only applied to the last page.
+    // Between pages, the dashed boundary has 5mm top and bottom margin.
+    // The last page has feed (bottom margin) before the cut line and 5mm spare after it.
+    const gap = isLast ? feed : Math.round(5 * 8);
+    const tailDots = Math.round(5 * 8);
 
     if (opts.cutLine !== false) {
-      bitmap = appendCutLine(bitmap, { gap: feed, tail: tailDots });
-    } else if (feed > 0) {
-      bitmap = appendBlankRows(bitmap, isLast ? feed : Math.round(1 * 8));
+      bitmap = appendCutLine(bitmap, { gap, tail: tailDots });
+    } else if (feed > 0 || !isLast) {
+      bitmap = appendBlankRows(bitmap, isLast ? feed : Math.round(5 * 8));
     }
 
     const pageBytes = bitmapToEscPos(bitmap, {
@@ -105,7 +108,7 @@ export async function runImport(opts = {}, positional = []) {
     for (const v of bitmap.data) ink += v;
     process.stdout.write(
       `${c.dim(`page ${i + 1}/${grays.length}`)} ${dots}x${bitmap.height} dots ~${bitmap.heightMM}mm ` +
-        `${c.dim(`+${bottom}mm bawah`)} ` +
+        (isLast ? `${c.dim(`+${bottom}mm bawah`)} ` : `${c.dim(`+5mm pembatas`)} `) +
         `${c.dim(`${((100 * ink) / bitmap.data.length).toFixed(1)}% ink`)}\n`
     );
   }
