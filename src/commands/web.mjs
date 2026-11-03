@@ -19,7 +19,7 @@ import { c } from './shared.mjs';
 const MAX_BODY = 24 * 1024 * 1024;
 
 /** Bumped whenever the UI or the import pipeline changes. */
-export const BUILD = 'import-' + (process.env.NONE ?? 'r2-450dpi');
+export const BUILD = 'import-' + (process.env.NONE ?? 'r3-margin7');
 
 /** Prepared bitmaps from recent previews, so a print sends the previewed dots. */
 const jobs = new Map();
@@ -289,7 +289,7 @@ async function handle(req, res) {
     // rasterise to drift from it.
     // Blank paper under the label so tearing it off cannot chew the last row.
     // 203dpi is 8 dots to the millimetre.
-    const bottomMM = Math.max(0, Number(body.bottom) || 0);
+    const bottomMM = body.bottom === undefined ? 7 : Math.max(0, Number(body.bottom) || 0);
     const feed = Math.round(bottomMM * 8);
     const cutLine = body.cutLine !== false;
 
@@ -318,18 +318,17 @@ async function handle(req, res) {
 
       for (let i = 0; i < grays.length; i++) {
         const isLast = i === grays.length - 1;
-        // Margin bottom is only applied to the last page.
-        // Between pages, the dashed boundary has 5mm top and bottom margin.
-        // The last page has feed (bottom margin) before the cut line and 5mm spare after it.
-        const gap = isLast ? feed : Math.round(5 * 8);
-        const tailDots = Math.round(5 * 8);
+        // Jarak antar page: total 2mm (1mm di atas garis potong, 1mm di bawah garis potong).
+        // Halaman terakhir: 5mm di atas garis potong, dan margin bawah (feed) setelah garis potong.
+        const gap = isLast ? Math.round(5 * 8) : Math.round(1 * 8);
+        const tailDots = isLast ? feed : Math.round(1 * 8);
         const gray = grays[i];
         const prepared = options.trim
           ? prepareBitmap(gray, options)
           : prepareBitmap(gray, { ...options, trim: false });
         const printable = cutLine
           ? appendCutLine(prepared, { gap, tail: tailDots })
-          : appendBlankRows(prepared, isLast ? feed : Math.round(5 * 8));
+          : appendBlankRows(prepared, isLast ? feed : Math.round(2 * 8));
         const pageBytes = bitmapToEscPos(printable, {
           cut: isLast ? (body.cut === 'none' ? null : body.cut || 'partial') : null,
           feed: cutLine ? 0 : (isLast ? 40 : 0),

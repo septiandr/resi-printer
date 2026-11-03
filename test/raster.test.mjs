@@ -452,46 +452,46 @@ test('imagesToGray returns array of pages for a PDF', async () => {
   assert.ok(pages[0].gray instanceof Uint8Array);
 });
 
-test('page boundary cut line has 5mm (40 dots) top and bottom margin', () => {
+test('page boundary cut line has 1mm (8 dots) top and bottom margin (total 2mm antar page)', () => {
+  const width = 8;
+  const height = 10;
+  const data = new Uint8Array(width * height).fill(1);
+  const bitmap = { width, height, data };
+  const gap1mm = Math.round(1 * 8); // 8 dots (1mm di atas garis potong)
+  const tail1mm = Math.round(1 * 8); // 8 dots (1mm di bawah garis potong)
+  const out = appendCutLine(bitmap, { gap: gap1mm, tail: tail1mm });
+
+  assert.equal(out.height, height + 8 + 2 + 8);
+  // Verify gap rows (1mm top margin) are blank
+  for (let r = 0; r < 8; r++) {
+    const rowOffset = width * (height + r);
+    for (let x = 0; x < width; x++) assert.equal(out.data[rowOffset + x], 0);
+  }
+  // Verify tail rows (1mm bottom margin) are blank
+  for (let r = 0; r < 8; r++) {
+    const rowOffset = width * (height + 8 + 2 + r);
+    for (let x = 0; x < width; x++) assert.equal(out.data[rowOffset + x], 0);
+  }
+});
+
+test('last page cut line has 5mm before line and bottom margin after line', () => {
   const width = 8;
   const height = 10;
   const data = new Uint8Array(width * height).fill(1);
   const bitmap = { width, height, data };
   const gap5mm = Math.round(5 * 8); // 40 dots
-  const tail5mm = Math.round(5 * 8); // 40 dots
-  const out = appendCutLine(bitmap, { gap: gap5mm, tail: tail5mm });
-
-  assert.equal(out.height, height + 40 + 2 + 40);
-  // Verify gap rows (top margin) are blank
-  for (let r = 0; r < 40; r++) {
-    const rowOffset = width * (height + r);
-    for (let x = 0; x < width; x++) assert.equal(out.data[rowOffset + x], 0);
-  }
-  // Verify tail rows (bottom margin) are blank
-  for (let r = 0; r < 40; r++) {
-    const rowOffset = width * (height + 40 + 2 + r);
-    for (let x = 0; x < width; x++) assert.equal(out.data[rowOffset + x], 0);
-  }
-});
-
-test('last page cut line applies bottom margin before line and 5mm spare after line', () => {
-  const width = 8;
-  const height = 10;
-  const data = new Uint8Array(width * height).fill(1);
-  const bitmap = { width, height, data };
   const bottomMargin15mm = Math.round(15 * 8); // 120 dots
-  const tail5mm = Math.round(5 * 8); // 40 dots
-  const out = appendCutLine(bitmap, { gap: bottomMargin15mm, tail: tail5mm });
+  const out = appendCutLine(bitmap, { gap: gap5mm, tail: bottomMargin15mm });
 
-  assert.equal(out.height, height + 120 + 2 + 40);
-  // Verify gap rows (15mm margin) are blank
-  for (let r = 0; r < 120; r++) {
+  assert.equal(out.height, height + 40 + 2 + 120);
+  // Verify gap rows (5mm space before cut line) are blank
+  for (let r = 0; r < 40; r++) {
     const rowOffset = width * (height + r);
     for (let x = 0; x < width; x++) assert.equal(out.data[rowOffset + x], 0);
   }
-  // Verify tail rows (5mm spare) are blank
-  for (let r = 0; r < 40; r++) {
-    const rowOffset = width * (height + 120 + 2 + r);
+  // Verify tail rows (15mm bottom margin after cut line) are blank
+  for (let r = 0; r < 120; r++) {
+    const rowOffset = width * (height + 40 + 2 + r);
     for (let x = 0; x < width; x++) assert.equal(out.data[rowOffset + x], 0);
   }
 });

@@ -56,7 +56,7 @@ export async function runImport(opts = {}, positional = []) {
   const margin = opts.margin === undefined ? 3 : Number(opts.margin);
   // Blank paper under the label, so tearing it off does not chew the last row
   // of dots. 203dpi is 8 dots to the millimetre.
-  const bottom = opts.bottom === undefined ? 5 : Math.max(0, Number(opts.bottom));
+  const bottom = opts.bottom === undefined ? 7 : Math.max(0, Number(opts.bottom));
   const feed = Math.round(bottom * 8);
 
   process.stdout.write(`${c.dim('reading')} ${file}\n`);
@@ -85,16 +85,15 @@ export async function runImport(opts = {}, positional = []) {
     }
 
     const isLast = i === grays.length - 1;
-    // Margin bottom is only applied to the last page.
-    // Between pages, the dashed boundary has 5mm top and bottom margin.
-    // The last page has feed (bottom margin) before the cut line and 5mm spare after it.
-    const gap = isLast ? feed : Math.round(5 * 8);
-    const tailDots = Math.round(5 * 8);
+    // Jarak antar page: total 2mm (1mm di atas garis potong, 1mm di bawah garis potong).
+    // Halaman terakhir: 5mm di atas garis potong, dan margin bawah (feed) setelah garis potong.
+    const gap = isLast ? Math.round(5 * 8) : Math.round(1 * 8);
+    const tailDots = isLast ? feed : Math.round(1 * 8);
 
     if (opts.cutLine !== false) {
       bitmap = appendCutLine(bitmap, { gap, tail: tailDots });
     } else if (feed > 0 || !isLast) {
-      bitmap = appendBlankRows(bitmap, isLast ? feed : Math.round(5 * 8));
+      bitmap = appendBlankRows(bitmap, isLast ? feed : Math.round(2 * 8));
     }
 
     const pageBytes = bitmapToEscPos(bitmap, {
@@ -108,7 +107,7 @@ export async function runImport(opts = {}, positional = []) {
     for (const v of bitmap.data) ink += v;
     process.stdout.write(
       `${c.dim(`page ${i + 1}/${grays.length}`)} ${dots}x${bitmap.height} dots ~${bitmap.heightMM}mm ` +
-        (isLast ? `${c.dim(`+${bottom}mm bawah`)} ` : `${c.dim(`+5mm pembatas`)} `) +
+        (isLast ? `${c.dim(`+${bottom}mm bawah`)} ` : `${c.dim(`+2mm antar-page`)} `) +
         `${c.dim(`${((100 * ink) / bitmap.data.length).toFixed(1)}% ink`)}\n`
     );
   }

@@ -297,7 +297,8 @@ export function HTML() {
               <label for="imp-bottom">Margin bawah</label>
               <select id="imp-bottom">
                 <option value="0">0 mm (tanpa margin)</option>
-                <option value="5" selected>5 mm</option>
+                <option value="5">5 mm</option>
+                <option value="7" selected>7 mm (standar)</option>
                 <option value="10">10 mm</option>
                 <option value="15">15 mm</option>
                 <option value="20">20 mm</option>
@@ -306,7 +307,7 @@ export function HTML() {
               </select>
             </div>
           </div>
-          <p class="hint">Margin bawah hanya diterapkan di page terakhir (sebelum garis potong). Pembatas tiap page berjarak margin atas-bawah 5 mm, dan setelah garis potong akhir terdapat spare 5 mm.</p>
+          <p class="hint">Margin bawah diterapkan setelah garis potong di page terakhir. Pembatas antar-page berjarak total 2 mm (1 mm di atas dan 1 mm di bawah garis potong).</p>
           <div class="field check">
             <input type="checkbox" id="imp-dither"><label for="imp-dither">Dither (untuk gambar abu-abu)</label>
           </div>
