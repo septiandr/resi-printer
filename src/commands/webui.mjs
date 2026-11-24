@@ -275,8 +275,8 @@ export function HTML() {
               <label for="imp-threshold">Gelap &ge;</label>
               <select id="imp-threshold">
                 <option value="80">80 - Printing lebih terang</option>
-                <option value="128" selected>128 - standar</option>
-                <option value="180">180 - lebih pekat</option>
+                <option value="128">128 - standar</option>
+                <option value="180" selected>180 - lebih pekat (default)</option>
                 <option value="210">210 - pekat sekali</option>
               </select>
             </div>

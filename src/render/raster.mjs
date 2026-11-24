@@ -27,7 +27,7 @@ const BAYER = [
 ];
 
 /** Convert grayscale samples to 1 byte per dot: 1 = burn, 0 = paper. */
-export function thresholdGray(gray, { width, height, level = 128, dither = false, invert = false }) {
+export function thresholdGray(gray, { width, height, level = 180, dither = false, invert = false }) {
   const out = new Uint8Array(width * height);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -161,7 +161,7 @@ export function trimWhite({ width, height, gray }, { threshold = 200, margin = 0
  */
 export function prepareBitmap(
   grayImage,
-  { dots, threshold = 128, dither = false, invert = false, maxHeight = 0, trim = true, margin = 0 },
+  { dots, threshold = 180, dither = false, invert = false, maxHeight = 0, trim = true, margin = 0 },
 ) {
   const source = trim ? trimWhite(grayImage, { margin }) : grayImage;
   const image = maxHeight ? fitInside(source, dots, maxHeight) : scaleGray(source, dots);

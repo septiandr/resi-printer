@@ -276,7 +276,7 @@ async function handle(req, res) {
 
     const options = {
       dots,
-      threshold: Number(body.threshold) || 128,
+      threshold: Number(body.threshold) || 180,
       dither: Boolean(body.dither),
       invert: Boolean(body.invert),
       margin: body.margin === undefined ? 3 : Number(body.margin),

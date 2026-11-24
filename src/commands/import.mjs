@@ -72,7 +72,7 @@ export async function runImport(opts = {}, positional = []) {
     const trimmed = opts.noTrim ? gray : trimWhite(gray, { margin });
     let bitmap = prepareBitmap(trimmed, {
       dots,
-      threshold: Number(opts.threshold) || 128,
+      threshold: Number(opts.threshold) || 180,
       dither: Boolean(opts.dither),
       invert: Boolean(opts.invert),
       trim: false, // already trimmed above
@@ -80,7 +80,7 @@ export async function runImport(opts = {}, positional = []) {
 
     if (opts.scale) {
       const pct = Number(opts.scale) / 100;
-      bitmap = prepareBitmap(trimmed, { dots, threshold: Number(opts.threshold) || 128, dither: Boolean(opts.dither), invert: Boolean(opts.invert), trim: false });
+      bitmap = prepareBitmap(trimmed, { dots, threshold: Number(opts.threshold) || 180, dither: Boolean(opts.dither), invert: Boolean(opts.invert), trim: false });
       bitmap = { ...bitmap, width: Math.max(8, Math.round(bitmap.width * pct)), data: bitmap.data };
     }
 
